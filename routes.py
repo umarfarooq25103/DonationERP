@@ -136,6 +136,7 @@ def create_voucher():
             donation_mode = request.form['donation_mode']
             donation_date = datetime.strptime(request.form['donation_date'], '%Y-%m-%d').date()
             notes = request.form.get('notes', '')
+            payment_method = request.form.get('payment_method', 'cash')
             
             # Create new voucher
             new_voucher = Voucher(
@@ -159,7 +160,23 @@ def create_voucher():
     
     # GET request
     recipients = Recipient.query.all()
-    return render_template('create_voucher.html', recipients=recipients)
+    vouchers_count = Voucher.query.count()
+    
+    # Check if we have a recipient_id in the query parameters
+    recipient_id = request.args.get('recipient_id')
+    selected_recipient = None
+    if recipient_id:
+        try:
+            selected_recipient = Recipient.query.get(int(recipient_id))
+        except:
+            pass
+    
+    return render_template(
+        'create_voucher.html',
+        recipients=recipients,
+        vouchers_count=vouchers_count,
+        selected_recipient=selected_recipient
+    )
 
 @app.route('/vouchers/<int:voucher_id>', methods=['GET'])
 def view_voucher(voucher_id):

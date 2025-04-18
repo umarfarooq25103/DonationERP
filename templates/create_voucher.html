@@ -9,12 +9,49 @@
     </div>
 </div>
 
+<div class="row mb-4">
+    <!-- Quick Options -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-2">
+                        <div class="d-grid">
+                            <button class="btn btn-outline-primary" id="quickZakat">
+                                <i class="fas fa-file-invoice"></i> Quick Zakat Voucher
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <div class="d-grid">
+                            <button class="btn btn-outline-success" id="quickSadqa">
+                                <i class="fas fa-file-invoice"></i> Quick Sadqa Voucher
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <div class="d-grid">
+                            <button class="btn btn-outline-warning" id="quickEidGift">
+                                <i class="fas fa-file-invoice"></i> Quick Eid Gift
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row">
     <!-- Voucher Form -->
     <div class="col-lg-6 mb-4">
         <div class="card">
-            <div class="card-header bg-success text-white">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="fas fa-file-invoice"></i> New Voucher</h5>
+                <span class="badge bg-light text-dark" id="voucherNumber">VOC-{{ "{:06d}".format(vouchers_count|default(1) + 1) }}</span>
             </div>
             <div class="card-body">
                 {% if recipients %}
@@ -24,61 +61,112 @@
                         <select class="form-select" id="recipient_id" name="recipient_id" required>
                             <option value="" selected disabled>-- Select a Recipient --</option>
                             {% for recipient in recipients %}
-                            <option value="{{ recipient.id }}">{{ recipient.name }} ({{ recipient.cnic }})</option>
+                            <option value="{{ recipient.id }}" {% if request.args.get('recipient_id')|int == recipient.id %}selected{% endif %}>
+                                {{ recipient.name }} ({{ recipient.cnic }})
+                            </option>
                             {% endfor %}
                         </select>
                         <small class="form-text text-muted">وصول کنندہ</small>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="donation_type" class="form-label">Donation Type <span class="text-danger">*</span></label>
-                        <select class="form-select" id="donation_type" name="donation_type" required>
-                            <option value="" selected disabled>-- Select Donation Type --</option>
-                            <option value="Zakat">Zakat (زکوٰۃ)</option>
-                            <option value="Sadqa">Sadqa (صدقہ)</option>
-                            <option value="Marriage Salami">Marriage Salami (شادی کی سلامی)</option>
-                            <option value="Eid Gift">Eid Gift (عید کا تحفہ)</option>
-                            <option value="Other">Other (دیگر)</option>
-                        </select>
-                        <small class="form-text text-muted">عطیہ کی قسم</small>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="amount" class="form-label">Amount (Rs.) <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <span class="input-group-text">Rs.</span>
-                            <input type="number" class="form-control" id="amount" name="amount" required min="1" step="0.01">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="donation_type" class="form-label">Donation Type <span class="text-danger">*</span></label>
+                                <select class="form-select" id="donation_type" name="donation_type" required>
+                                    <option value="" selected disabled>-- Select Donation Type --</option>
+                                    <option value="Zakat">Zakat (زکوٰۃ)</option>
+                                    <option value="Sadqa">Sadqa (صدقہ)</option>
+                                    <option value="Marriage Salami">Marriage Salami (شادی کی سلامی)</option>
+                                    <option value="Eid Gift">Eid Gift (عید کا تحفہ)</option>
+                                    <option value="Other">Other (دیگر)</option>
+                                </select>
+                                <small class="form-text text-muted">عطیہ کی قسم</small>
+                            </div>
                         </div>
-                        <small class="form-text text-muted">رقم</small>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="donation_mode" class="form-label">Donation Mode <span class="text-danger">*</span></label>
+                                <select class="form-select" id="donation_mode" name="donation_mode" required>
+                                    <option value="" selected disabled>-- Select Mode --</option>
+                                    <option value="One-time">One-time (ایک بار)</option>
+                                    <option value="Monthly">Monthly (ماہانہ)</option>
+                                    <option value="Quarterly">Quarterly (سہ ماہی)</option>
+                                    <option value="Yearly">Yearly (سالانہ)</option>
+                                </select>
+                                <small class="form-text text-muted">عطیہ کا طریقہ</small>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="donation_mode" class="form-label">Donation Mode <span class="text-danger">*</span></label>
-                        <select class="form-select" id="donation_mode" name="donation_mode" required>
-                            <option value="" selected disabled>-- Select Mode --</option>
-                            <option value="One-time">One-time (ایک بار)</option>
-                            <option value="Monthly">Monthly (ماہانہ)</option>
-                            <option value="Quarterly">Quarterly (سہ ماہی)</option>
-                            <option value="Yearly">Yearly (سالانہ)</option>
-                        </select>
-                        <small class="form-text text-muted">عطیہ کا طریقہ</small>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="donation_date" class="form-label">Donation Date <span class="text-danger">*</span></label>
-                        <input type="date" class="form-control" id="donation_date" name="donation_date" required>
-                        <small class="form-text text-muted">عطیہ کی تاریخ</small>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="amount" class="form-label">Amount (Rs.) <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rs.</span>
+                                    <input type="number" class="form-control" id="amount" name="amount" required min="1" step="0.01">
+                                </div>
+                                <small class="form-text text-muted">رقم</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="donation_date" class="form-label">Donation Date <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="donation_date" name="donation_date" required>
+                                <small class="form-text text-muted">عطیہ کی تاریخ</small>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="mb-3">
                         <label for="notes" class="form-label">Notes</label>
-                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                        <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                  placeholder="Enter any additional details about this donation..."></textarea>
                         <small class="form-text text-muted">نوٹس</small>
                     </div>
                     
-                    <div class="d-grid">
+                    <!-- Common donation amounts -->
+                    <div class="mb-3">
+                        <label class="form-label">Quick Amounts:</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary amount-btn" data-amount="1000">Rs. 1,000</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary amount-btn" data-amount="2000">Rs. 2,000</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary amount-btn" data-amount="5000">Rs. 5,000</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary amount-btn" data-amount="10000">Rs. 10,000</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary amount-btn" data-amount="25000">Rs. 25,000</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Payment method -->
+                    <div class="mb-3">
+                        <label class="form-label">Payment Method:</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="payment_method" id="cash" value="cash" checked>
+                            <label class="form-check-label" for="cash">
+                                Cash
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="payment_method" id="bank_transfer" value="bank_transfer">
+                            <label class="form-check-label" for="bank_transfer">
+                                Bank Transfer
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="payment_method" id="check" value="check">
+                            <label class="form-check-label" for="check">
+                                Check
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-success">
                             <i class="fas fa-save"></i> Create Voucher
+                        </button>
+                        <button type="reset" class="btn btn-outline-secondary">
+                            <i class="fas fa-undo"></i> Reset Form
                         </button>
                     </div>
                 </form>
@@ -100,7 +188,7 @@
     <div class="col-lg-6">
         <div class="card">
             <div class="card-header bg-info text-white">
-                <h5 class="mb-0"><i class="fas fa-user-circle"></i> Recipient Details</h5>
+                <h5 class="mb-0"><i class="fas fa-user-circle"></i> Recipient Information</h5>
             </div>
             <div class="card-body">
                 <div id="recipientDetails">
@@ -113,8 +201,13 @@
         
         <!-- Recent Vouchers for this Recipient -->
         <div class="card mt-4">
-            <div class="card-header bg-secondary text-white">
+            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="fas fa-history"></i> Recent Vouchers</h5>
+                <div>
+                    <button class="btn btn-sm btn-light" id="viewAllVouchers" style="display: none;">
+                        <i class="fas fa-list"></i> View All
+                    </button>
+                </div>
             </div>
             <div class="card-body">
                 <div id="recentVouchers">
@@ -122,6 +215,108 @@
                         <i class="fas fa-info-circle"></i> Select a recipient to view their recent vouchers.
                     </div>
                 </div>
+            </div>
+        </div>
+        
+        <!-- Donation Summary Card -->
+        <div class="card mt-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Donation Summary</h5>
+            </div>
+            <div class="card-body">
+                <div id="donationSummary">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Select a recipient to view their donation summary.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Voucher Preview Modal -->
+<div class="modal fade" id="voucherPreviewModal" tabindex="-1" aria-labelledby="voucherPreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="voucherPreviewModalLabel">
+                    <i class="fas fa-file-invoice"></i> Voucher Preview
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="voucherPreview" class="border p-3">
+                    <!-- Voucher content will be displayed here -->
+                    <div class="text-center mb-4">
+                        <h2>Donation Voucher</h2>
+                        <h4 class="text-muted" id="previewVoucherNumber">VOC-000123</h4>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <strong>Recipient:</strong>
+                            <div id="previewRecipientName"></div>
+                        </div>
+                        <div class="col-6 text-end">
+                            <strong>Date:</strong>
+                            <div id="previewVoucherDate"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <strong>CNIC:</strong>
+                            <div id="previewRecipientCNIC"></div>
+                        </div>
+                        <div class="col-6 text-end">
+                            <strong>Donation Type:</strong>
+                            <div id="previewDonationType"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong>Amount:</strong>
+                            <div class="fs-4" id="previewAmount"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <strong>Donation Mode:</strong>
+                            <div id="previewDonationMode"></div>
+                        </div>
+                        <div class="col-6 text-end">
+                            <strong>Payment Method:</strong>
+                            <div id="previewPaymentMethod"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-5">
+                        <div class="col-12">
+                            <strong>Notes:</strong>
+                            <div id="previewNotes"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-5">
+                        <div class="col-6">
+                            <div class="border-top pt-2">Recipient Signature</div>
+                        </div>
+                        <div class="col-6 text-end">
+                            <div class="border-top pt-2">Authorized Signature</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="printVoucherPreview">
+                    <i class="fas fa-print"></i> Print Voucher
+                </button>
+                <button type="button" class="btn btn-success" id="confirmVoucher">
+                    <i class="fas fa-check"></i> Confirm & Create
+                </button>
             </div>
         </div>
     </div>
@@ -136,9 +331,106 @@
         const formattedDate = today.toISOString().substr(0, 10);
         $('#donation_date').val(formattedDate);
         
+        // Quick amount buttons
+        $('.amount-btn').click(function() {
+            const amount = $(this).data('amount');
+            $('#amount').val(amount);
+            
+            // Clear all active states
+            $('.amount-btn').removeClass('active btn-primary').addClass('btn-outline-primary');
+            
+            // Set this button as active
+            $(this).removeClass('btn-outline-primary').addClass('btn-primary active');
+        });
+        
+        // Quick action buttons
+        $('#quickZakat').click(function() {
+            $('#donation_type').val('Zakat');
+            $('#donation_mode').val('One-time');
+            $('#amount').val(5000);
+            showPreviewModal();
+        });
+        
+        $('#quickSadqa').click(function() {
+            $('#donation_type').val('Sadqa');
+            $('#donation_mode').val('Monthly');
+            $('#amount').val(2000);
+            showPreviewModal();
+        });
+        
+        $('#quickEidGift').click(function() {
+            $('#donation_type').val('Eid Gift');
+            $('#donation_mode').val('One-time');
+            $('#amount').val(3000);
+            showPreviewModal();
+        });
+        
+        // Show preview modal before submitting form
+        $('#createVoucherForm').submit(function(e) {
+            e.preventDefault();
+            showPreviewModal();
+        });
+        
+        // Confirm voucher button
+        $('#confirmVoucher').click(function() {
+            $('#voucherPreviewModal').modal('hide');
+            $('#createVoucherForm')[0].submit();
+        });
+        
+        // Print voucher preview
+        $('#printVoucherPreview').click(function() {
+            const printContent = document.getElementById('voucherPreview').innerHTML;
+            const printWindow = window.open('', '_blank');
+            
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Donation Voucher</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        .text-center { text-align: center; }
+                        .text-end { text-align: right; }
+                        .mb-3 { margin-bottom: 15px; }
+                        .mb-4 { margin-bottom: 20px; }
+                        .mb-5 { margin-bottom: 25px; }
+                        .mt-5 { margin-top: 25px; }
+                        .fs-4 { font-size: 1.25rem; }
+                        .row { display: flex; clear: both; }
+                        .col-6 { width: 50%; float: left; }
+                        .col-12 { width: 100%; }
+                        .border-top { border-top: 1px solid #ddd; padding-top: 10px; }
+                        .pt-2 { padding-top: 10px; }
+                        @media print {
+                            body { margin: 0; padding: 15px; }
+                        }
+                    </style>
+                </head>
+                <body onload="window.print()">
+                    <div class="voucher-container">
+                        ${printContent}
+                    </div>
+                </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+        });
+        
         // When a recipient is selected, display their details
         $('#recipient_id').change(function() {
             const recipientId = $(this).val();
+            
+            // Reset donation summary
+            $('#donationSummary').html(`
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Select a recipient to view their donation summary.
+                </div>
+            `);
+            
+            // Show/hide view all vouchers button
+            $('#viewAllVouchers').hide();
+            
             if (recipientId) {
                 // Get the selected option text (name and CNIC)
                 const selectedOption = $(this).find('option:selected').text();
@@ -171,6 +463,30 @@
                     url: `/api/recipient/${recipientId}/vouchers`,
                     method: 'GET',
                     success: function(data) {
+                        // Update recipient details
+                        const recipient = data.recipient;
+                        const detailsHtml = `
+                            <div class="card border-info">
+                                <div class="card-body">
+                                    <h5 class="card-title">${recipient.name}</h5>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p class="card-text"><strong>CNIC:</strong> ${recipient.cnic}</p>
+                                            <p class="card-text"><strong>Phone:</strong> ${recipient.phone || 'Not provided'}</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p class="card-text"><strong>Monthly Income:</strong> Rs. ${parseFloat(recipient.monthly_income).toLocaleString('en-US')}</p>
+                                            <p class="card-text"><strong>Registered:</strong> ${new Date(recipient.created_at).toLocaleDateString()}</p>
+                                        </div>
+                                    </div>
+                                    <p class="card-text"><strong>Address:</strong> ${recipient.address || 'Not provided'}</p>
+                                </div>
+                            </div>
+                        `;
+                        
+                        $('#recipientDetails').html(detailsHtml);
+                        
+                        // Show vouchers
                         if (data.vouchers && data.vouchers.length > 0) {
                             let vouchersHtml = `
                                 <div class="table-responsive">
@@ -181,6 +497,7 @@
                                                 <th>Date</th>
                                                 <th>Type</th>
                                                 <th>Amount</th>
+                                                <th>Action</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -198,6 +515,11 @@
                                             minimumFractionDigits: 2,
                                             maximumFractionDigits: 2
                                         })}</td>
+                                        <td>
+                                            <a href="/vouchers/${voucher.id}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
                                     </tr>
                                 `;
                             });
@@ -209,15 +531,34 @@
                             `;
                             
                             $('#recentVouchers').html(vouchersHtml);
+                            
+                            // Show view all button only if there are vouchers
+                            $('#viewAllVouchers').show();
+                            $('#viewAllVouchers').attr('data-recipient-id', recipientId);
+                            
+                            // Create donation summary
+                            createDonationSummary(data.vouchers);
                         } else {
                             $('#recentVouchers').html(`
                                 <div class="alert alert-info">
                                     <i class="fas fa-info-circle"></i> No recent vouchers found for this recipient.
                                 </div>
                             `);
+                            
+                            $('#donationSummary').html(`
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i> No donation history available.
+                                </div>
+                            `);
                         }
                     },
                     error: function() {
+                        $('#recipientDetails').html(`
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle"></i> Error loading recipient details.
+                            </div>
+                        `);
+                        
                         $('#recentVouchers').html(`
                             <div class="alert alert-danger">
                                 <i class="fas fa-exclamation-triangle"></i> Error loading voucher history.
@@ -225,22 +566,6 @@
                         `);
                     }
                 });
-                
-                // Function to get badge HTML for donation type
-                function getBadgeForDonationType(type) {
-                    switch(type) {
-                        case 'Zakat':
-                            return '<span class="badge bg-primary">Zakat</span>';
-                        case 'Sadqa':
-                            return '<span class="badge bg-success">Sadqa</span>';
-                        case 'Marriage Salami':
-                            return '<span class="badge bg-danger">Marriage Salami</span>';
-                        case 'Eid Gift':
-                            return '<span class="badge bg-warning text-dark">Eid Gift</span>';
-                        default:
-                            return `<span class="badge bg-info">${type}</span>`;
-                    }
-                }
             } else {
                 // If no recipient is selected, show default message
                 $('#recipientDetails').html(`
@@ -256,6 +581,145 @@
                 `);
             }
         });
+        
+        // View all vouchers button
+        $('#viewAllVouchers').click(function() {
+            const recipientId = $(this).data('recipient-id');
+            window.location.href = `/reports?recipient_id=${recipientId}`;
+        });
+        
+        // Create donation summary
+        function createDonationSummary(vouchers) {
+            // Group vouchers by type
+            const donationsByType = {};
+            let totalAmount = 0;
+            
+            vouchers.forEach(function(voucher) {
+                if (!donationsByType[voucher.donation_type]) {
+                    donationsByType[voucher.donation_type] = {
+                        count: 0,
+                        amount: 0
+                    };
+                }
+                
+                donationsByType[voucher.donation_type].count += 1;
+                donationsByType[voucher.donation_type].amount += parseFloat(voucher.amount);
+                totalAmount += parseFloat(voucher.amount);
+            });
+            
+            // Create HTML
+            let summaryHtml = `
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Donation Type</th>
+                                <th>Count</th>
+                                <th>Total Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            for (const [type, data] of Object.entries(donationsByType)) {
+                summaryHtml += `
+                    <tr>
+                        <td>${getBadgeForDonationType(type)}</td>
+                        <td>${data.count}</td>
+                        <td>Rs. ${data.amount.toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        })}</td>
+                    </tr>
+                `;
+            }
+            
+            summaryHtml += `
+                        <tr class="table-primary">
+                            <th>Total</th>
+                            <th>${vouchers.length}</th>
+                            <th>Rs. ${totalAmount.toLocaleString('en-US', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            })}</th>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+            
+            $('#donationSummary').html(summaryHtml);
+        }
+        
+        // Show voucher preview modal
+        function showPreviewModal() {
+            // Get form data
+            const recipientId = $('#recipient_id').val();
+            const recipientName = $('#recipient_id option:selected').text().split(' (')[0];
+            const recipientCNIC = $('#recipient_id option:selected').text().split(' (')[1]?.replace(')', '');
+            const donationType = $('#donation_type').val();
+            const donationMode = $('#donation_mode').val();
+            const amount = parseFloat($('#amount').val());
+            const donationDate = $('#donation_date').val();
+            const notes = $('#notes').val();
+            const paymentMethod = $('input[name="payment_method"]:checked').val();
+            
+            // Validate required fields
+            if (!recipientId || !donationType || !donationMode || !amount || !donationDate) {
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+            // Format values for display
+            const formattedAmount = amount.toLocaleString('en-US', {
+                style: 'currency',
+                currency: 'PKR',
+                minimumFractionDigits: 2
+            });
+            
+            const formattedDate = new Date(donationDate).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            // Set preview values
+            $('#previewRecipientName').text(recipientName);
+            $('#previewRecipientCNIC').text(recipientCNIC);
+            $('#previewDonationType').text(donationType);
+            $('#previewDonationMode').text(donationMode);
+            $('#previewAmount').text(formattedAmount);
+            $('#previewVoucherDate').text(formattedDate);
+            $('#previewPaymentMethod').text(paymentMethod.replace('_', ' ').toUpperCase());
+            $('#previewNotes').text(notes || 'N/A');
+            
+            // Set voucher number
+            const voucherNumber = $('#voucherNumber').text();
+            $('#previewVoucherNumber').text(voucherNumber);
+            
+            // Show modal
+            $('#voucherPreviewModal').modal('show');
+        }
+        
+        // Function to get badge HTML for donation type
+        function getBadgeForDonationType(type) {
+            switch(type) {
+                case 'Zakat':
+                    return '<span class="badge bg-primary">Zakat</span>';
+                case 'Sadqa':
+                    return '<span class="badge bg-success">Sadqa</span>';
+                case 'Marriage Salami':
+                    return '<span class="badge bg-danger">Marriage Salami</span>';
+                case 'Eid Gift':
+                    return '<span class="badge bg-warning text-dark">Eid Gift</span>';
+                default:
+                    return `<span class="badge bg-info">${type}</span>`;
+            }
+        }
+        
+        // Initialize with selected recipient if any
+        if ($('#recipient_id').val()) {
+            $('#recipient_id').trigger('change');
+        }
     });
 </script>
 {% endblock %}

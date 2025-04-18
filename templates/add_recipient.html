@@ -10,6 +10,43 @@
 </div>
 
 <div class="row">
+    <!-- Search and Filters -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-search"></i> Search & Filters</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" id="searchRecipient" 
+                                   placeholder="Search by name, CNIC, or phone...">
+                            <button class="btn btn-outline-primary" type="button">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select mb-3" id="incomeFilter">
+                            <option value="all" selected>All Income Levels</option>
+                            <option value="low">Low (< Rs. 15,000)</option>
+                            <option value="medium">Medium (Rs. 15,000 - 30,000)</option>
+                            <option value="high">High (> Rs. 30,000)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-grid">
+                            <button class="btn btn-outline-secondary" id="resetFilters">
+                                <i class="fas fa-undo"></i> Reset Filters
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Add Recipient Form -->
     <div class="col-lg-5 mb-4">
         <div class="card">
@@ -29,12 +66,13 @@
                         <div class="input-group">
                             <input type="text" class="form-control" id="cnic" name="cnic" 
                                    placeholder="13 digits without dashes" required
-                                   pattern="\d{13}" title="CNIC must be 13 digits">
+                                   pattern="\d{13}" title="CNIC must be 13 digits"
+                                   oninput="formatCNIC(this)">
                             <button class="btn btn-outline-secondary" type="button" id="lookupFRC">
                                 <i class="fas fa-search"></i> Lookup
                             </button>
                         </div>
-                        <small class="form-text text-muted">شناختی کارڈ نمبر</small>
+                        <small class="form-text text-muted">شناختی کارڈ نمبر (e.g. 3630212345678)</small>
                         <div id="cnicError" class="invalid-feedback"></div>
                     </div>
                     
@@ -46,14 +84,44 @@
                     
                     <div class="mb-3">
                         <label for="phone" class="form-label">Phone Number <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="phone" name="phone" required>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                            <input type="text" class="form-control" id="phone" name="phone" 
+                                   placeholder="e.g. 03001234567" required
+                                   oninput="formatPhoneNumber(this)">
+                        </div>
                         <small class="form-text text-muted">فون نمبر</small>
                     </div>
                     
                     <div class="mb-3">
                         <label for="monthly_income" class="form-label">Monthly Income (Rs.) <span class="text-danger">*</span></label>
-                        <input type="number" class="form-control" id="monthly_income" name="monthly_income" required min="0">
+                        <div class="input-group">
+                            <span class="input-group-text">Rs.</span>
+                            <input type="number" class="form-control" id="monthly_income" name="monthly_income" required min="0">
+                        </div>
                         <small class="form-text text-muted">ماہانہ آمدنی</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Income Category</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="income_category" id="low_income" value="low" checked>
+                            <label class="form-check-label" for="low_income">
+                                Low Income
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="income_category" id="middle_income" value="middle">
+                            <label class="form-check-label" for="middle_income">
+                                Middle Income
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="income_category" id="high_income" value="high">
+                            <label class="form-check-label" for="high_income">
+                                High Income
+                            </label>
+                        </div>
                     </div>
                     
                     <div class="mb-3">
@@ -62,9 +130,12 @@
                         <small class="form-text text-muted">خاندانی تفصیلات</small>
                     </div>
                     
-                    <div class="d-grid">
+                    <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i> Save Recipient
+                        </button>
+                        <button type="reset" class="btn btn-outline-secondary">
+                            <i class="fas fa-undo"></i> Reset Form
                         </button>
                     </div>
                 </form>
@@ -75,8 +146,16 @@
     <!-- Recipients List -->
     <div class="col-lg-7">
         <div class="card">
-            <div class="card-header bg-secondary text-white">
+            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="fas fa-list"></i> Recipients List</h5>
+                <div>
+                    <button class="btn btn-sm btn-light" id="exportRecipients">
+                        <i class="fas fa-file-export"></i> Export
+                    </button>
+                    <button class="btn btn-sm btn-light" id="printRecipients">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                </div>
             </div>
             <div class="card-body">
                 {% if recipients %}
@@ -89,6 +168,7 @@
                                 <th>CNIC</th>
                                 <th>Phone</th>
                                 <th>Income</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -99,16 +179,106 @@
                                 <td>{{ recipient.cnic }}</td>
                                 <td>{{ recipient.phone }}</td>
                                 <td>Rs. {{ "{:,.2f}".format(recipient.monthly_income) }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary view-recipient" data-id="{{ recipient.id }}">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-success create-voucher" data-id="{{ recipient.id }}">
+                                            <i class="fas fa-receipt"></i>
+                                        </button>
+                                    </div>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
+                <!-- Pagination -->
+                <nav aria-label="Page navigation" class="mt-3">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1">Previous</a>
+                        </li>
+                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">3</a></li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">Next</a>
+                        </li>
+                    </ul>
+                </nav>
                 {% else %}
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle"></i> No recipients have been added yet.
                 </div>
                 {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recipient Details Modal -->
+<div class="modal fade" id="recipientDetailsModal" tabindex="-1" aria-labelledby="recipientDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="recipientDetailsModalLabel">
+                    <i class="fas fa-user-circle"></i> Recipient Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="recipientDetailContent">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Name:</label>
+                                <p id="modalRecipientName" class="mb-2"></p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">CNIC:</label>
+                                <p id="modalRecipientCNIC" class="mb-2"></p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Phone:</label>
+                                <p id="modalRecipientPhone" class="mb-2"></p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Address:</label>
+                                <p id="modalRecipientAddress" class="mb-2"></p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Monthly Income:</label>
+                                <p id="modalRecipientIncome" class="mb-2"></p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Registration Date:</label>
+                                <p id="modalRecipientDate" class="mb-2"></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Family Details:</label>
+                        <p id="modalRecipientFamily" class="mb-2"></p>
+                    </div>
+                    
+                    <hr>
+                    <h6 class="text-primary"><i class="fas fa-receipt"></i> Recent Vouchers</h6>
+                    <div id="modalRecipientVouchers" class="table-responsive">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="#" class="btn btn-success" id="createVoucherBtn">
+                    <i class="fas fa-file-invoice"></i> Create Voucher
+                </a>
             </div>
         </div>
     </div>
@@ -169,7 +339,261 @@
 
 {% block extra_js %}
 <script>
+    // Format CNIC as user types
+    function formatCNIC(input) {
+        // Remove anything that's not a digit
+        let value = input.value.replace(/\D/g, '');
+        
+        // Ensure we don't exceed 13 digits
+        if (value.length > 13) {
+            value = value.slice(0, 13);
+        }
+        
+        // Update the input value
+        input.value = value;
+    }
+    
+    // Format phone number as user types
+    function formatPhoneNumber(input) {
+        // Remove anything that's not a digit
+        let value = input.value.replace(/\D/g, '');
+        
+        // Enforce Pakistani mobile number format (11 digits)
+        if (value.length > 11) {
+            value = value.slice(0, 11);
+        }
+        
+        // Update the input value
+        input.value = value;
+    }
+    
     $(document).ready(function() {
+        // Table search functionality
+        $('#searchRecipient').on('keyup', function() {
+            const value = $(this).val().toLowerCase();
+            $('#recipientsTable tbody tr').filter(function() {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+            });
+        });
+        
+        // Income filter
+        $('#incomeFilter').change(function() {
+            const value = $(this).val();
+            
+            if (value === 'all') {
+                $('#recipientsTable tbody tr').show();
+                return;
+            }
+            
+            $('#recipientsTable tbody tr').each(function() {
+                const incomeText = $(this).find('td:eq(4)').text();
+                const income = parseFloat(incomeText.replace(/[^0-9.-]+/g, ''));
+                
+                if (value === 'low' && income < 15000) {
+                    $(this).show();
+                } else if (value === 'medium' && income >= 15000 && income <= 30000) {
+                    $(this).show();
+                } else if (value === 'high' && income > 30000) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        });
+        
+        // Reset filters
+        $('#resetFilters').click(function() {
+            $('#searchRecipient').val('');
+            $('#incomeFilter').val('all');
+            $('#recipientsTable tbody tr').show();
+        });
+        
+        // Export recipients list
+        $('#exportRecipients').click(function() {
+            const rows = [];
+            const headers = [];
+            
+            // Get headers
+            $('#recipientsTable thead th').each(function() {
+                if ($(this).text() !== 'Actions') {
+                    headers.push($(this).text());
+                }
+            });
+            
+            rows.push(headers);
+            
+            // Get data rows
+            $('#recipientsTable tbody tr:visible').each(function() {
+                const row = [];
+                $(this).find('td').each(function(index) {
+                    if (index < 5) { // Skip Actions column
+                        row.push($(this).text().trim());
+                    }
+                });
+                rows.push(row);
+            });
+            
+            // Convert to CSV
+            let csvContent = "data:text/csv;charset=utf-8,";
+            
+            rows.forEach(function(rowArray) {
+                const row = rowArray.join(",");
+                csvContent += row + "\r\n";
+            });
+            
+            // Create download link
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "recipients_list.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+        
+        // Print recipients list
+        $('#printRecipients').click(function() {
+            const printWindow = window.open('', '_blank');
+            
+            const printContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Recipients List - Donation ERP System</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        h1 { text-align: center; margin-bottom: 20px; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        th { background-color: #f2f2f2; }
+                        tr:nth-child(even) { background-color: #f9f9f9; }
+                        .text-right { text-align: right; }
+                        .print-date { text-align: right; font-size: 12px; margin-bottom: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="print-date">Printed on: ${new Date().toLocaleString()}</div>
+                    <h1>Recipients List</h1>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>CNIC</th>
+                                <th>Phone</th>
+                                <th>Income</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${$('#recipientsTable tbody tr:visible').map(function() {
+                                return `<tr>
+                                    <td>${$(this).find('td:eq(0)').text()}</td>
+                                    <td>${$(this).find('td:eq(1)').text()}</td>
+                                    <td>${$(this).find('td:eq(2)').text()}</td>
+                                    <td>${$(this).find('td:eq(3)').text()}</td>
+                                    <td>${$(this).find('td:eq(4)').text()}</td>
+                                </tr>`;
+                            }).get().join('')}
+                        </tbody>
+                    </table>
+                </body>
+                </html>
+            `;
+            
+            printWindow.document.open();
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+            
+            // Wait for content to load then print
+            printWindow.onload = function() {
+                printWindow.print();
+            };
+        });
+        
+        // View recipient details
+        $('.view-recipient').click(function() {
+            const recipientId = $(this).data('id');
+            const name = $(this).closest('tr').find('td:eq(1)').text();
+            const cnic = $(this).closest('tr').find('td:eq(2)').text();
+            const phone = $(this).closest('tr').find('td:eq(3)').text();
+            
+            // Set data in modal
+            $('#modalRecipientName').text(name);
+            $('#modalRecipientCNIC').text(cnic);
+            $('#modalRecipientPhone').text(phone);
+            
+            // Set link for voucher creation
+            $('#createVoucherBtn').attr('href', `/vouchers/create?recipient_id=${recipientId}`);
+            
+            // Fetch additional details
+            $.ajax({
+                url: `/api/recipient/${recipientId}/vouchers`,
+                method: 'GET',
+                success: function(data) {
+                    $('#modalRecipientAddress').text(data.recipient.address || 'Not provided');
+                    $('#modalRecipientIncome').text(`Rs. ${parseFloat(data.recipient.monthly_income).toLocaleString('en-US')}`);
+                    $('#modalRecipientDate').text(data.recipient.created_at || 'Not available');
+                    $('#modalRecipientFamily').text(data.recipient.family_data || 'No family data recorded');
+                    
+                    // Show vouchers
+                    if (data.vouchers && data.vouchers.length > 0) {
+                        let vouchersHtml = `
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Date</th>
+                                        <th>Type</th>
+                                        <th>Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                        `;
+                        
+                        data.vouchers.forEach(function(voucher) {
+                            vouchersHtml += `
+                                <tr>
+                                    <td>${voucher.id}</td>
+                                    <td>${voucher.donation_date}</td>
+                                    <td>${getBadgeForDonationType(voucher.donation_type)}</td>
+                                    <td>Rs. ${parseFloat(voucher.amount).toLocaleString('en-US')}</td>
+                                </tr>
+                            `;
+                        });
+                        
+                        vouchersHtml += `
+                                </tbody>
+                            </table>
+                        `;
+                        
+                        $('#modalRecipientVouchers').html(vouchersHtml);
+                    } else {
+                        $('#modalRecipientVouchers').html(`
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> No vouchers found for this recipient.
+                            </div>
+                        `);
+                    }
+                },
+                error: function() {
+                    $('#modalRecipientVouchers').html(`
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i> Error loading recipient details.
+                        </div>
+                    `);
+                }
+            });
+            
+            // Show modal
+            $('#recipientDetailsModal').modal('show');
+        });
+        
+        // Create voucher button in table
+        $('.create-voucher').click(function() {
+            const recipientId = $(this).data('id');
+            window.location.href = `/vouchers/create?recipient_id=${recipientId}`;
+        });
+        
         // FRC Lookup functionality
         $('#lookupFRC').click(function() {
             const cnic = $('#cnic').val();
@@ -253,6 +677,22 @@
             // Close modal
             $('#frcDataModal').modal('hide');
         });
+        
+        // Helper function for voucher type badges
+        function getBadgeForDonationType(type) {
+            switch(type) {
+                case 'Zakat':
+                    return '<span class="badge bg-primary">Zakat</span>';
+                case 'Sadqa':
+                    return '<span class="badge bg-success">Sadqa</span>';
+                case 'Marriage Salami':
+                    return '<span class="badge bg-danger">Marriage Salami</span>';
+                case 'Eid Gift':
+                    return '<span class="badge bg-warning text-dark">Eid Gift</span>';
+                default:
+                    return `<span class="badge bg-info">${type}</span>`;
+            }
+        }
     });
 </script>
 {% endblock %}
