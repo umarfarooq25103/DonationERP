@@ -83,6 +83,63 @@ def add_recipient():
     recipients = Recipient.query.all()
     return render_template('add_recipient.html', recipients=recipients)
 
+@app.route('/recipients/<int:recipient_id>/edit', methods=['GET', 'POST'])
+def edit_recipient(recipient_id):
+    # Get the recipient or return 404
+    recipient = Recipient.query.get_or_404(recipient_id)
+    
+    if request.method == 'POST':
+        try:
+            # Update recipient fields
+            recipient.name = request.form['name']
+            
+            # Check if CNIC is being changed and if it conflicts with another recipient
+            new_cnic = request.form['cnic']
+            if new_cnic != recipient.cnic:
+                existing_recipient = Recipient.query.filter_by(cnic=new_cnic).first()
+                if existing_recipient and existing_recipient.id != recipient_id:
+                    flash('A recipient with this CNIC already exists.', 'danger')
+                    return redirect(url_for('edit_recipient', recipient_id=recipient_id))
+            
+            recipient.cnic = new_cnic
+            recipient.address = request.form['address']
+            recipient.phone = request.form['phone']
+            recipient.monthly_income = float(request.form['monthly_income'])
+            recipient.family_data = request.form.get('family_data', '')
+            
+            db.session.commit()
+            flash('Recipient updated successfully!', 'success')
+            return redirect(url_for('list_recipients'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating recipient: {str(e)}', 'danger')
+            return redirect(url_for('edit_recipient', recipient_id=recipient_id))
+    
+    # GET request - show the edit form
+    return render_template('edit_recipient.html', recipient=recipient)
+
+@app.route('/recipients/<int:recipient_id>/delete', methods=['POST'])
+def delete_recipient(recipient_id):
+    recipient = Recipient.query.get_or_404(recipient_id)
+    
+    try:
+        # Check if recipient has vouchers
+        voucher_count = Voucher.query.filter_by(recipient_id=recipient_id).count()
+        
+        if voucher_count > 0:
+            flash(f'Cannot delete recipient because they have {voucher_count} vouchers. Delete the vouchers first.', 'danger')
+            return redirect(url_for('list_recipients'))
+        
+        # If no vouchers, proceed with deletion
+        db.session.delete(recipient)
+        db.session.commit()
+        flash('Recipient deleted successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting recipient: {str(e)}', 'danger')
+    
+    return redirect(url_for('list_recipients'))
+
 @app.route('/api/frc/<cnic>', methods=['GET'])
 def get_frc_data(cnic):
     frc_data = load_frc_data()
@@ -186,6 +243,48 @@ def view_voucher(voucher_id):
     return render_template('view_voucher.html', 
                            voucher=voucher, 
                            recipient=recipient)
+
+@app.route('/vouchers/<int:voucher_id>/edit', methods=['GET', 'POST'])
+def edit_voucher(voucher_id):
+    # Get the voucher or return 404
+    voucher = Voucher.query.get_or_404(voucher_id)
+    
+    if request.method == 'POST':
+        try:
+            # Update voucher fields
+            voucher.recipient_id = request.form['recipient_id']
+            voucher.donation_type = request.form['donation_type']
+            voucher.amount = float(request.form['amount'])
+            voucher.donation_mode = request.form['donation_mode']
+            voucher.donation_date = datetime.strptime(request.form['donation_date'], '%Y-%m-%d').date()
+            voucher.notes = request.form.get('notes', '')
+            
+            db.session.commit()
+            flash('Voucher updated successfully!', 'success')
+            return redirect(url_for('view_voucher', voucher_id=voucher_id))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating voucher: {str(e)}', 'danger')
+            return redirect(url_for('edit_voucher', voucher_id=voucher_id))
+    
+    # GET request - show the edit form
+    recipients = Recipient.query.all()
+    return render_template('edit_voucher.html', voucher=voucher, recipients=recipients)
+
+@app.route('/vouchers/<int:voucher_id>/delete', methods=['POST'])
+def delete_voucher(voucher_id):
+    voucher = Voucher.query.get_or_404(voucher_id)
+    
+    try:
+        # Delete the voucher
+        db.session.delete(voucher)
+        db.session.commit()
+        flash('Voucher deleted successfully!', 'success')
+        return redirect(url_for('reports'))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting voucher: {str(e)}', 'danger')
+        return redirect(url_for('view_voucher', voucher_id=voucher_id))
 
 # Reporting
 @app.route('/reports', methods=['GET'])

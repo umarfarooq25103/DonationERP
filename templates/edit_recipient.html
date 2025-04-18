@@ -1,0 +1,328 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Recipient - Donation ERP System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1><i class="fas fa-user-edit"></i> Edit Recipient</h1>
+            <a href="{{ url_for('list_recipients') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-user-edit"></i> Edit Recipient: {{ recipient.name }}</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('edit_recipient', recipient_id=recipient.id) }}" method="POST" id="editRecipientForm">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="name" name="name" required value="{{ recipient.name }}">
+                        <small class="form-text text-muted">نام</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="cnic" class="form-label">CNIC Number <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="cnic" name="cnic" 
+                                   placeholder="13 digits without dashes" required
+                                   pattern="\d{13}" title="CNIC must be 13 digits"
+                                   value="{{ recipient.cnic }}"
+                                   oninput="formatCNIC(this)">
+                            <button class="btn btn-outline-secondary" type="button" id="lookupFRC">
+                                <i class="fas fa-search"></i> Lookup
+                            </button>
+                        </div>
+                        <small class="form-text text-muted">شناختی کارڈ نمبر (e.g. 3630212345678)</small>
+                        <div id="cnicError" class="invalid-feedback"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Address <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="address" name="address" rows="2" required>{{ recipient.address }}</textarea>
+                        <small class="form-text text-muted">پتہ</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">Phone Number <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                            <input type="text" class="form-control" id="phone" name="phone" 
+                                   placeholder="e.g. 03001234567" required
+                                   value="{{ recipient.phone }}"
+                                   oninput="formatPhoneNumber(this)">
+                        </div>
+                        <small class="form-text text-muted">فون نمبر</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="monthly_income" class="form-label">Monthly Income (Rs.) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text">Rs.</span>
+                            <input type="number" class="form-control" id="monthly_income" name="monthly_income" required min="0" value="{{ recipient.monthly_income }}">
+                        </div>
+                        <small class="form-text text-muted">ماہانہ آمدنی</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Income Category</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="income_category" id="low_income" value="low" 
+                                   {% if recipient.monthly_income < 15000 %}checked{% endif %}>
+                            <label class="form-check-label" for="low_income">
+                                Low Income
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="income_category" id="middle_income" value="middle"
+                                   {% if recipient.monthly_income >= 15000 and recipient.monthly_income <= 30000 %}checked{% endif %}>
+                            <label class="form-check-label" for="middle_income">
+                                Middle Income
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="income_category" id="high_income" value="high"
+                                   {% if recipient.monthly_income > 30000 %}checked{% endif %}>
+                            <label class="form-check-label" for="high_income">
+                                High Income
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="family_data" class="form-label">Family Data</label>
+                        <textarea class="form-control" id="family_data" name="family_data" rows="5">{{ recipient.family_data }}</textarea>
+                        <small class="form-text text-muted">خاندانی تفصیلات</small>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Update Recipient
+                        </button>
+                        <a href="{{ url_for('list_recipients') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Delete Recipient Card -->
+        <div class="card mt-4 border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-trash-alt"></i> Delete Recipient</h5>
+            </div>
+            <div class="card-body">
+                <p class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> Warning: Deleting a recipient is permanent and cannot be undone. 
+                    All associated vouchers must be deleted first.
+                </p>
+                <form action="{{ url_for('delete_recipient', recipient_id=recipient.id) }}" method="POST" id="deleteRecipientForm">
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this recipient? This action cannot be undone.')">
+                            <i class="fas fa-trash-alt"></i> Delete Recipient
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FRC Data Modal -->
+<div class="modal fade" id="frcDataModal" tabindex="-1" aria-labelledby="frcDataModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="frcDataModalLabel">
+                    <i class="fas fa-id-card"></i> FRC Data
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="frcContent">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Head of Family:</label>
+                        <p id="headOfFamily" class="mb-2"></p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Address:</label>
+                        <p id="frcAddress" class="mb-2"></p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Family Members:</label>
+                        <div id="familyMembers">
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Relation</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="familyMembersTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div id="frcError" class="alert alert-danger d-none">
+                    <i class="fas fa-exclamation-triangle"></i> <span id="frcErrorMessage"></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="useFRCData">
+                    <i class="fas fa-check"></i> Use This Data
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Format CNIC as user types
+    function formatCNIC(input) {
+        // Remove anything that's not a digit
+        let value = input.value.replace(/\D/g, '');
+        
+        // Ensure we don't exceed 13 digits
+        if (value.length > 13) {
+            value = value.slice(0, 13);
+        }
+        
+        // Update the input value
+        input.value = value;
+    }
+    
+    // Format phone number as user types
+    function formatPhoneNumber(input) {
+        // Remove anything that's not a digit
+        let value = input.value.replace(/\D/g, '');
+        
+        // Enforce Pakistani mobile number format (11 digits)
+        if (value.length > 11) {
+            value = value.slice(0, 11);
+        }
+        
+        // Update the input value
+        input.value = value;
+    }
+    
+    $(document).ready(function() {
+        // FRC Lookup functionality
+        $('#lookupFRC').click(function() {
+            const cnic = $('#cnic').val();
+            
+            // CNIC validation
+            if (!cnic || cnic.length !== 13 || !/^\d+$/.test(cnic)) {
+                $('#cnic').addClass('is-invalid');
+                $('#cnicError').text('CNIC must be 13 digits without dashes.');
+                return;
+            }
+            
+            $('#cnic').removeClass('is-invalid');
+            
+            // Fetch FRC data
+            $.ajax({
+                url: `/api/frc/${cnic}`,
+                method: 'GET',
+                success: function(data) {
+                    // Fill modal with FRC data
+                    $('#headOfFamily').text(data.head_of_family);
+                    $('#frcAddress').text(data.address);
+                    
+                    // Clear and populate family members table
+                    const tableBody = $('#familyMembersTableBody');
+                    tableBody.empty();
+                    
+                    // Add family members to table
+                    data.family_members.forEach(function(member) {
+                        const row = `<tr>
+                            <td>${member.name}</td>
+                            <td>${member.relation}</td>
+                        </tr>`;
+                        tableBody.append(row);
+                    });
+                    
+                    // Show content and hide error
+                    $('#frcContent').removeClass('d-none');
+                    $('#frcError').addClass('d-none');
+                    
+                    // Show modal
+                    $('#frcDataModal').modal('show');
+                },
+                error: function(xhr) {
+                    // Show error in modal
+                    $('#frcContent').addClass('d-none');
+                    $('#frcError').removeClass('d-none');
+                    
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        $('#frcErrorMessage').text(xhr.responseJSON.error);
+                    } else {
+                        $('#frcErrorMessage').text('Failed to fetch FRC data. Please try again.');
+                    }
+                    
+                    // Show modal with error
+                    $('#frcDataModal').modal('show');
+                }
+            });
+        });
+        
+        // Use FRC Data button click
+        $('#useFRCData').click(function() {
+            const headOfFamily = $('#headOfFamily').text();
+            const frcAddress = $('#frcAddress').text();
+            
+            // Prepare family data text
+            let familyData = `Head of Family: ${headOfFamily}\n`;
+            familyData += `Address: ${frcAddress}\n\n`;
+            familyData += `Family Members:\n`;
+            
+            $('#familyMembersTableBody tr').each(function() {
+                const name = $(this).find('td:first').text();
+                const relation = $(this).find('td:last').text();
+                familyData += `- ${name} (${relation})\n`;
+            });
+            
+            // Fill form fields
+            $('#name').val(headOfFamily);
+            $('#address').val(frcAddress);
+            $('#family_data').val(familyData);
+            
+            // Close modal
+            $('#frcDataModal').modal('hide');
+        });
+        
+        // Income category radio buttons behavior
+        $('input[name="income_category"]').on('change', function() {
+            const selectedCategory = $(this).val();
+            let incomeValue = 0;
+            
+            switch(selectedCategory) {
+                case 'low':
+                    incomeValue = 10000; // Default low income
+                    break;
+                case 'middle':
+                    incomeValue = 20000; // Default middle income
+                    break;
+                case 'high':
+                    incomeValue = 35000; // Default high income
+                    break;
+            }
+            
+            $('#monthly_income').val(incomeValue);
+        });
+    });
+</script>
+{% endblock %}

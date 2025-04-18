@@ -181,11 +181,22 @@
                                 <td>Rs. {{ "{:,.2f}".format(recipient.monthly_income) }}</td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-primary view-recipient" data-id="{{ recipient.id }}">
+                                        <button class="btn btn-outline-primary view-recipient" data-id="{{ recipient.id }}" title="View Details">
                                             <i class="fas fa-eye"></i>
                                         </button>
-                                        <button class="btn btn-outline-success create-voucher" data-id="{{ recipient.id }}">
+                                        <a href="{{ url_for('edit_recipient', recipient_id=recipient.id) }}" class="btn btn-outline-secondary" title="Edit Recipient">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button class="btn btn-outline-success create-voucher" data-id="{{ recipient.id }}" title="Create Voucher">
                                             <i class="fas fa-receipt"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger delete-recipient" 
+                                                data-id="{{ recipient.id }}" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#deleteRecipientModal" 
+                                                data-name="{{ recipient.name }}"
+                                                title="Delete Recipient">
+                                            <i class="fas fa-trash-alt"></i>
                                         </button>
                                     </div>
                                 </td>
@@ -279,6 +290,35 @@
                 <a href="#" class="btn btn-success" id="createVoucherBtn">
                     <i class="fas fa-file-invoice"></i> Create Voucher
                 </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Recipient Confirmation Modal -->
+<div class="modal fade" id="deleteRecipientModal" tabindex="-1" aria-labelledby="deleteRecipientModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteRecipientModalLabel">
+                    <i class="fas fa-trash-alt"></i> Confirm Deletion
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    Are you sure you want to delete recipient: <strong id="deleteRecipientName"></strong>?
+                </p>
+                <p>This action cannot be undone. All vouchers associated with this recipient must be deleted first.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteRecipientForm" method="POST">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash-alt"></i> Delete Permanently
+                    </button>
+                </form>
             </div>
         </div>
     </div>
@@ -592,6 +632,18 @@
         $('.create-voucher').click(function() {
             const recipientId = $(this).data('id');
             window.location.href = `/vouchers/create?recipient_id=${recipientId}`;
+        });
+        
+        // Delete recipient button setup
+        $('.delete-recipient').click(function() {
+            const recipientId = $(this).data('id');
+            const recipientName = $(this).data('name');
+            
+            // Set the name in the confirmation message
+            $('#deleteRecipientName').text(recipientName);
+            
+            // Set the form action
+            $('#deleteRecipientForm').attr('action', `/recipients/${recipientId}/delete`);
         });
         
         // FRC Lookup functionality
