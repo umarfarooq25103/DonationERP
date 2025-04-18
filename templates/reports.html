@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+
+{% block title %}Reports - Donation ERP System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4"><i class="fas fa-chart-bar"></i> Donation Reports</h1>
+    </div>
+</div>
+
+<!-- Filter Form -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-filter"></i> Filter Reports</h5>
+            </div>
+            <div class="card-body">
+                <form id="reportFilterForm" action="{{ url_for('reports') }}" method="GET">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label for="start_date" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" 
+                                  value="{{ current_filters.start_date or '' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="end_date" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date"
+                                   value="{{ current_filters.end_date or '' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="donation_type" class="form-label">Donation Type</label>
+                            <select class="form-select" id="donation_type" name="donation_type">
+                                <option value="All" {% if not current_filters.donation_type or current_filters.donation_type == 'All' %}selected{% endif %}>All Types</option>
+                                <option value="Zakat" {% if current_filters.donation_type == 'Zakat' %}selected{% endif %}>Zakat</option>
+                                <option value="Sadqa" {% if current_filters.donation_type == 'Sadqa' %}selected{% endif %}>Sadqa</option>
+                                <option value="Marriage Salami" {% if current_filters.donation_type == 'Marriage Salami' %}selected{% endif %}>Marriage Salami</option>
+                                <option value="Eid Gift" {% if current_filters.donation_type == 'Eid Gift' %}selected{% endif %}>Eid Gift</option>
+                                <option value="Other" {% if current_filters.donation_type == 'Other' %}selected{% endif %}>Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="recipient_name" class="form-label">Recipient Name</label>
+                            <input type="text" class="form-control" id="recipient_name" name="recipient_name" 
+                                   placeholder="Search by name" value="{{ current_filters.recipient_name or '' }}">
+                        </div>
+                        <div class="col-12 mt-3 d-flex justify-content-between">
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Apply Filters
+                                </button>
+                                <a href="{{ url_for('reports') }}" class="btn btn-outline-secondary ms-2">
+                                    <i class="fas fa-undo"></i> Reset
+                                </a>
+                            </div>
+                            <div>
+                                <a href="{{ url_for('export_reports') }}{{ '?' + request.query_string.decode() if request.query_string else '' }}" 
+                                   class="btn btn-success">
+                                    <i class="fas fa-file-csv"></i> Export to CSV
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Donations</h5>
+                <p class="card-text display-5">Rs. {{ "{:,.2f}".format(grand_total or 0) }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Donations by Type</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for type, amount in totals.items() %}
+                    <div class="col-md-6 mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span>
+                                {% if type == 'Zakat' %}
+                                <i class="fas fa-hand-holding-usd text-primary"></i>
+                                {% elif type == 'Sadqa' %}
+                                <i class="fas fa-dove text-success"></i>
+                                {% elif type == 'Marriage Salami' %}
+                                <i class="fas fa-gift text-danger"></i>
+                                {% elif type == 'Eid Gift' %}
+                                <i class="fas fa-moon text-warning"></i>
+                                {% else %}
+                                <i class="fas fa-box-open text-info"></i>
+                                {% endif %}
+                                {{ type }}:
+                            </span>
+                            <strong>Rs. {{ "{:,.2f}".format(amount) }}</strong>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar 
+                                {% if type == 'Zakat' %}bg-primary
+                                {% elif type == 'Sadqa' %}bg-success
+                                {% elif type == 'Marriage Salami' %}bg-danger
+                                {% elif type == 'Eid Gift' %}bg-warning
+                                {% else %}bg-info{% endif %}" 
+                                role="progressbar" 
+                                style="width: {{ (amount / grand_total * 100) if grand_total else 0 }}%" 
+                                aria-valuenow="{{ amount }}" 
+                                aria-valuemin="0" 
+                                aria-valuemax="{{ grand_total }}">
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> No donation data available.
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Vouchers List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-list"></i> Vouchers List</h5>
+            </div>
+            <div class="card-body">
+                {% if vouchers %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="vouchersTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Date</th>
+                                <th>Recipient</th>
+                                <th>Type</th>
+                                <th>Mode</th>
+                                <th>Amount</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for voucher, recipient_name in vouchers %}
+                            <tr>
+                                <td>{{ voucher.id }}</td>
+                                <td>{{ voucher.donation_date.strftime('%d-%m-%Y') }}</td>
+                                <td>{{ recipient_name }}</td>
+                                <td>
+                                    {% if voucher.donation_type == 'Zakat' %}
+                                    <span class="badge bg-primary">Zakat</span>
+                                    {% elif voucher.donation_type == 'Sadqa' %}
+                                    <span class="badge bg-success">Sadqa</span>
+                                    {% elif voucher.donation_type == 'Marriage Salami' %}
+                                    <span class="badge bg-danger">Marriage Salami</span>
+                                    {% elif voucher.donation_type == 'Eid Gift' %}
+                                    <span class="badge bg-warning text-dark">Eid Gift</span>
+                                    {% else %}
+                                    <span class="badge bg-info">{{ voucher.donation_type }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if voucher.donation_mode == 'One-time' %}
+                                    <span class="badge bg-secondary">One-time</span>
+                                    {% elif voucher.donation_mode == 'Monthly' %}
+                                    <span class="badge bg-dark">Monthly</span>
+                                    {% else %}
+                                    <span class="badge bg-light text-dark">{{ voucher.donation_mode }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>Rs. {{ "{:,.2f}".format(voucher.amount) }}</td>
+                                <td>
+                                    {% if voucher.notes %}
+                                    <button type="button" class="btn btn-sm btn-outline-info" 
+                                            data-bs-toggle="tooltip" data-bs-placement="top" 
+                                            title="{{ voucher.notes }}">
+                                        <i class="fas fa-sticky-note"></i>
+                                    </button>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No vouchers found matching the current filters.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Initialize tooltips
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+        
+        // When the start date changes, set the minimum date for end date
+        $('#start_date').change(function() {
+            const startDate = $(this).val();
+            if (startDate) {
+                $('#end_date').attr('min', startDate);
+            } else {
+                $('#end_date').removeAttr('min');
+            }
+        });
+        
+        // When the end date changes, set the maximum date for start date
+        $('#end_date').change(function() {
+            const endDate = $(this).val();
+            if (endDate) {
+                $('#start_date').attr('max', endDate);
+            } else {
+                $('#start_date').removeAttr('max');
+            }
+        });
+        
+        // Trigger change on page load to set initial constraints
+        $('#start_date').trigger('change');
+        $('#end_date').trigger('change');
+    });
+</script>
+{% endblock %}

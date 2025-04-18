@@ -1,0 +1,34 @@
+{
+  "1234567890123": {
+    "head_of_family": "Ahmad Khan",
+    "address": "House No. 123, Street 45, Islamabad",
+    "family_members": [
+      {"name": "Ahmad Khan", "relation": "Self"},
+      {"name": "Fatima Khan", "relation": "Wife"},
+      {"name": "Aisha Khan", "relation": "Daughter"},
+      {"name": "Ali Khan", "relation": "Son"}
+    ]
+  },
+  "9876543210987": {
+    "head_of_family": "Bilal Ahmed",
+    "address": "Flat 3, Block B, Green Town, Lahore",
+    "family_members": [
+      {"name": "Bilal Ahmed", "relation": "Self"},
+      {"name": "Saima Ahmed", "relation": "Wife"},
+      {"name": "Hassan Ahmed", "relation": "Son"},
+      {"name": "Hania Ahmed", "relation": "Daughter"},
+      {"name": "Zainab Bibi", "relation": "Mother"}
+    ]
+  },
+  "5678901234567": {
+    "head_of_family": "Zainab Malik",
+    "address": "Plot 45, Sector 7, Karachi",
+    "family_members": [
+      {"name": "Zainab Malik", "relation": "Self"},
+      {"name": "Imran Malik", "relation": "Husband"},
+      {"name": "Saad Malik", "relation": "Son"},
+      {"name": "Sana Malik", "relation": "Daughter"},
+      {"name": "Tariq Malik", "relation": "Father-in-law"}
+    ]
+  }
+}

@@ -1,0 +1,108 @@
+/* Custom CSS for Donation ERP System */
+
+/* Override Bootstrap variables for dark theme consistency */
+:root {
+    --bs-primary: #375a7f;
+    --bs-success: #00bc8c;
+    --bs-info: #3498db;
+    --bs-warning: #f39c12;
+    --bs-danger: #e74c3c;
+}
+
+/* Custom styling */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+footer {
+    margin-top: auto;
+}
+
+/* Add subtle box shadow to cards */
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.15);
+    margin-bottom: 1.5rem;
+    border: none;
+}
+
+.card-header {
+    border-bottom: none;
+    padding: 0.75rem 1rem;
+}
+
+/* Improve form styling */
+.form-control:focus, .form-select:focus {
+    box-shadow: 0 0 0 0.2rem rgba(55, 90, 127, 0.25);
+}
+
+/* Make sure navbar toggler is visible in dark mode */
+.navbar-toggler {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Add some Urdu font support for multilingual labels */
+.form-text {
+    font-family: 'Noto Nastaliq Urdu', serif;
+}
+
+/* Table improvements */
+.table-responsive {
+    border-radius: 0.25rem;
+    overflow: hidden;
+}
+
+.table thead th {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-bottom: none;
+    font-weight: 600;
+}
+
+/* Badge styling */
+.badge {
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+}
+
+/* Button improvements */
+.btn {
+    font-weight: 500;
+}
+
+.btn-outline-secondary:hover {
+    color: #fff;
+}
+
+/* Custom animations for cards on hover */
+.card.hover-effect {
+    transition: transform 0.2s;
+}
+
+.card.hover-effect:hover {
+    transform: translateY(-5px);
+}
+
+/* Custom styling for the dashboard cards */
+.display-4 {
+    font-weight: 600;
+}
+
+/* Improve mobile responsiveness */
+@media (max-width: 768px) {
+    .display-4 {
+        font-size: 2.5rem;
+    }
+    
+    h1 {
+        font-size: 1.8rem;
+    }
+    
+    .card-title {
+        font-size: 1.1rem;
+    }
+}

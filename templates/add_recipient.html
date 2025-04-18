@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+
+{% block title %}Recipient Management - Donation ERP System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4"><i class="fas fa-users"></i> Recipient Management</h1>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Add Recipient Form -->
+    <div class="col-lg-5 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-user-plus"></i> Add New Recipient</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('add_recipient') }}" method="POST" id="addRecipientForm">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                        <small class="form-text text-muted">نام</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="cnic" class="form-label">CNIC Number <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="cnic" name="cnic" 
+                                   placeholder="13 digits without dashes" required
+                                   pattern="\d{13}" title="CNIC must be 13 digits">
+                            <button class="btn btn-outline-secondary" type="button" id="lookupFRC">
+                                <i class="fas fa-search"></i> Lookup
+                            </button>
+                        </div>
+                        <small class="form-text text-muted">شناختی کارڈ نمبر</small>
+                        <div id="cnicError" class="invalid-feedback"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Address <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="address" name="address" rows="2" required></textarea>
+                        <small class="form-text text-muted">پتہ</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">Phone Number <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="phone" name="phone" required>
+                        <small class="form-text text-muted">فون نمبر</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="monthly_income" class="form-label">Monthly Income (Rs.) <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="monthly_income" name="monthly_income" required min="0">
+                        <small class="form-text text-muted">ماہانہ آمدنی</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="family_data" class="form-label">Family Data</label>
+                        <textarea class="form-control" id="family_data" name="family_data" rows="5"></textarea>
+                        <small class="form-text text-muted">خاندانی تفصیلات</small>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Recipient
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recipients List -->
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-list"></i> Recipients List</h5>
+            </div>
+            <div class="card-body">
+                {% if recipients %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="recipientsTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>CNIC</th>
+                                <th>Phone</th>
+                                <th>Income</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for recipient in recipients %}
+                            <tr>
+                                <td>{{ recipient.id }}</td>
+                                <td>{{ recipient.name }}</td>
+                                <td>{{ recipient.cnic }}</td>
+                                <td>{{ recipient.phone }}</td>
+                                <td>Rs. {{ "{:,.2f}".format(recipient.monthly_income) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No recipients have been added yet.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FRC Data Modal -->
+<div class="modal fade" id="frcDataModal" tabindex="-1" aria-labelledby="frcDataModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="frcDataModalLabel">
+                    <i class="fas fa-id-card"></i> FRC Data
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="frcContent">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Head of Family:</label>
+                        <p id="headOfFamily" class="mb-2"></p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Address:</label>
+                        <p id="frcAddress" class="mb-2"></p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Family Members:</label>
+                        <div id="familyMembers">
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Relation</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="familyMembersTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div id="frcError" class="alert alert-danger d-none">
+                    <i class="fas fa-exclamation-triangle"></i> <span id="frcErrorMessage"></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="useFRCData">
+                    <i class="fas fa-check"></i> Use This Data
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // FRC Lookup functionality
+        $('#lookupFRC').click(function() {
+            const cnic = $('#cnic').val();
+            
+            // CNIC validation
+            if (!cnic || cnic.length !== 13 || !/^\d+$/.test(cnic)) {
+                $('#cnic').addClass('is-invalid');
+                $('#cnicError').text('CNIC must be 13 digits without dashes.');
+                return;
+            }
+            
+            $('#cnic').removeClass('is-invalid');
+            
+            // Fetch FRC data
+            $.ajax({
+                url: `/api/frc/${cnic}`,
+                method: 'GET',
+                success: function(data) {
+                    // Fill modal with FRC data
+                    $('#headOfFamily').text(data.head_of_family);
+                    $('#frcAddress').text(data.address);
+                    
+                    // Clear and populate family members table
+                    const tableBody = $('#familyMembersTableBody');
+                    tableBody.empty();
+                    
+                    // Add family members to table
+                    data.family_members.forEach(function(member) {
+                        const row = `<tr>
+                            <td>${member.name}</td>
+                            <td>${member.relation}</td>
+                        </tr>`;
+                        tableBody.append(row);
+                    });
+                    
+                    // Show content and hide error
+                    $('#frcContent').removeClass('d-none');
+                    $('#frcError').addClass('d-none');
+                    
+                    // Show modal
+                    $('#frcDataModal').modal('show');
+                },
+                error: function(xhr) {
+                    // Show error in modal
+                    $('#frcContent').addClass('d-none');
+                    $('#frcError').removeClass('d-none');
+                    
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        $('#frcErrorMessage').text(xhr.responseJSON.error);
+                    } else {
+                        $('#frcErrorMessage').text('Failed to fetch FRC data. Please try again.');
+                    }
+                    
+                    // Show modal with error
+                    $('#frcDataModal').modal('show');
+                }
+            });
+        });
+        
+        // Use FRC Data button click
+        $('#useFRCData').click(function() {
+            const headOfFamily = $('#headOfFamily').text();
+            const frcAddress = $('#frcAddress').text();
+            
+            // Prepare family data text
+            let familyData = `Head of Family: ${headOfFamily}\n`;
+            familyData += `Address: ${frcAddress}\n\n`;
+            familyData += `Family Members:\n`;
+            
+            $('#familyMembersTableBody tr').each(function() {
+                const name = $(this).find('td:first').text();
+                const relation = $(this).find('td:last').text();
+                familyData += `- ${name} (${relation})\n`;
+            });
+            
+            // Fill form fields
+            $('#name').val(headOfFamily);
+            $('#address').val(frcAddress);
+            $('#family_data').val(familyData);
+            
+            // Close modal
+            $('#frcDataModal').modal('hide');
+        });
+    });
+</script>
+{% endblock %}

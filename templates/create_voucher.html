@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Voucher - Donation ERP System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4"><i class="fas fa-receipt"></i> Create Donation Voucher</h1>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Voucher Form -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-file-invoice"></i> New Voucher</h5>
+            </div>
+            <div class="card-body">
+                {% if recipients %}
+                <form action="{{ url_for('create_voucher') }}" method="POST" id="createVoucherForm">
+                    <div class="mb-3">
+                        <label for="recipient_id" class="form-label">Select Recipient <span class="text-danger">*</span></label>
+                        <select class="form-select" id="recipient_id" name="recipient_id" required>
+                            <option value="" selected disabled>-- Select a Recipient --</option>
+                            {% for recipient in recipients %}
+                            <option value="{{ recipient.id }}">{{ recipient.name }} ({{ recipient.cnic }})</option>
+                            {% endfor %}
+                        </select>
+                        <small class="form-text text-muted">وصول کنندہ</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="donation_type" class="form-label">Donation Type <span class="text-danger">*</span></label>
+                        <select class="form-select" id="donation_type" name="donation_type" required>
+                            <option value="" selected disabled>-- Select Donation Type --</option>
+                            <option value="Zakat">Zakat (زکوٰۃ)</option>
+                            <option value="Sadqa">Sadqa (صدقہ)</option>
+                            <option value="Marriage Salami">Marriage Salami (شادی کی سلامی)</option>
+                            <option value="Eid Gift">Eid Gift (عید کا تحفہ)</option>
+                            <option value="Other">Other (دیگر)</option>
+                        </select>
+                        <small class="form-text text-muted">عطیہ کی قسم</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Amount (Rs.) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text">Rs.</span>
+                            <input type="number" class="form-control" id="amount" name="amount" required min="1" step="0.01">
+                        </div>
+                        <small class="form-text text-muted">رقم</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="donation_mode" class="form-label">Donation Mode <span class="text-danger">*</span></label>
+                        <select class="form-select" id="donation_mode" name="donation_mode" required>
+                            <option value="" selected disabled>-- Select Mode --</option>
+                            <option value="One-time">One-time (ایک بار)</option>
+                            <option value="Monthly">Monthly (ماہانہ)</option>
+                            <option value="Quarterly">Quarterly (سہ ماہی)</option>
+                            <option value="Yearly">Yearly (سالانہ)</option>
+                        </select>
+                        <small class="form-text text-muted">عطیہ کا طریقہ</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="donation_date" class="form-label">Donation Date <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="donation_date" name="donation_date" required>
+                        <small class="form-text text-muted">عطیہ کی تاریخ</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                        <small class="form-text text-muted">نوٹس</small>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Create Voucher
+                        </button>
+                    </div>
+                </form>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> You need to add recipients before creating vouchers.
+                </div>
+                <div class="d-grid">
+                    <a href="{{ url_for('add_recipient') }}" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i> Add Recipient
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recipient Details Card -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-user-circle"></i> Recipient Details</h5>
+            </div>
+            <div class="card-body">
+                <div id="recipientDetails">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Select a recipient to view their details.
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Vouchers for this Recipient -->
+        <div class="card mt-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-history"></i> Recent Vouchers</h5>
+            </div>
+            <div class="card-body">
+                <div id="recentVouchers">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Select a recipient to view their recent vouchers.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Set today's date as default
+        const today = new Date();
+        const formattedDate = today.toISOString().substr(0, 10);
+        $('#donation_date').val(formattedDate);
+        
+        // When a recipient is selected, display their details
+        $('#recipient_id').change(function() {
+            const recipientId = $(this).val();
+            if (recipientId) {
+                // Get the selected option text (name and CNIC)
+                const selectedOption = $(this).find('option:selected').text();
+                const [name, cnicWithBrackets] = selectedOption.split(' (');
+                const cnic = cnicWithBrackets.replace(')', '');
+                
+                // Create a card with recipient details
+                const detailsHtml = `
+                    <div class="card mb-3 border-info">
+                        <div class="card-body">
+                            <h5 class="card-title">${name}</h5>
+                            <p class="card-text"><strong>CNIC:</strong> ${cnic}</p>
+                            <p class="text-muted"><em>Loading more details...</em></p>
+                        </div>
+                    </div>
+                `;
+                
+                // Display recipient details
+                $('#recipientDetails').html(detailsHtml);
+                
+                // Simulating loading recipient details
+                // In a real application, you would fetch this from the server
+                $('#recentVouchers').html(`
+                    <div class="alert alert-info">
+                        <i class="fas fa-spinner fa-spin"></i> Loading recent voucher history...
+                    </div>
+                `);
+                
+                // Simulated response for demonstration purposes
+                // You should replace this with an actual AJAX call to get recipient details
+                setTimeout(function() {
+                    // This is just a placeholder - in a real app you'd fetch this data
+                    $('#recentVouchers').html(`
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> No recent vouchers found for this recipient.
+                        </div>
+                    `);
+                }, 1000);
+            } else {
+                // If no recipient is selected, show default message
+                $('#recipientDetails').html(`
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Select a recipient to view their details.
+                    </div>
+                `);
+                
+                $('#recentVouchers').html(`
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Select a recipient to view their recent vouchers.
+                    </div>
+                `);
+            }
+        });
+    });
+</script>
+{% endblock %}

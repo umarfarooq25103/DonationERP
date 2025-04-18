@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Donation ERP System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4"><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+    </div>
+</div>
+
+<!-- Overview Cards -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white mb-3">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-users"></i> Total Recipients</h5>
+                <p class="card-text display-4">{{ recipient_count }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success text-white mb-3">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-receipt"></i> Total Vouchers</h5>
+                <p class="card-text display-4">{{ voucher_count }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-info text-white mb-3">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-money-bill-wave"></i> Total Donations</h5>
+                <p class="card-text display-4">Rs. {{ "{:,.2f}".format(total_donations) }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <a href="{{ url_for('add_recipient') }}" class="btn btn-outline-primary btn-lg w-100">
+                            <i class="fas fa-user-plus"></i> Add New Recipient
+                        </a>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <a href="{{ url_for('create_voucher') }}" class="btn btn-outline-success btn-lg w-100">
+                            <i class="fas fa-file-invoice"></i> Create New Voucher
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Vouchers -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-clock"></i> Recent Vouchers</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_vouchers %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Recipient</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Date</th>
+                                <th>Mode</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for voucher in recent_vouchers %}
+                            <tr>
+                                <td>{{ voucher.id }}</td>
+                                <td>{{ voucher.recipient.name }}</td>
+                                <td>
+                                    {% if voucher.donation_type == 'Zakat' %}
+                                    <span class="badge bg-primary">Zakat</span>
+                                    {% elif voucher.donation_type == 'Sadqa' %}
+                                    <span class="badge bg-success">Sadqa</span>
+                                    {% else %}
+                                    <span class="badge bg-info">{{ voucher.donation_type }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>Rs. {{ "{:,.2f}".format(voucher.amount) }}</td>
+                                <td>{{ voucher.donation_date.strftime('%d-%m-%Y') }}</td>
+                                <td>
+                                    {% if voucher.donation_mode == 'One-time' %}
+                                    <span class="badge bg-secondary">One-time</span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark">{{ voucher.donation_mode }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <a href="{{ url_for('reports') }}" class="btn btn-outline-info mt-3">
+                    <i class="fas fa-file-alt"></i> View All Reports
+                </a>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No vouchers have been created yet.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
