@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+
+{% block title %}Voucher #{{ voucher.id }} - Donation ERP System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h1><i class="fas fa-receipt"></i> Donation Voucher #{{ voucher.id }}</h1>
+        <div>
+            <button class="btn btn-outline-primary me-2" onclick="printVoucher()">
+                <i class="fas fa-print"></i> Print Voucher
+            </button>
+            <a href="{{ url_for('create_voucher') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-plus"></i> Create New Voucher
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card" id="voucher-card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0 text-center">DONATION VOUCHER</h4>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-6">
+                        <h5 class="text-muted">Voucher Information</h5>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Voucher #:</strong></td>
+                                <td>{{ voucher.id }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Date:</strong></td>
+                                <td>{{ voucher.donation_date.strftime('%d-%m-%Y') }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Donation Type:</strong></td>
+                                <td>
+                                    {% if voucher.donation_type == 'Zakat' %}
+                                    <span class="badge bg-primary">Zakat</span>
+                                    {% elif voucher.donation_type == 'Sadqa' %}
+                                    <span class="badge bg-success">Sadqa</span>
+                                    {% elif voucher.donation_type == 'Marriage Salami' %}
+                                    <span class="badge bg-danger">Marriage Salami</span>
+                                    {% elif voucher.donation_type == 'Eid Gift' %}
+                                    <span class="badge bg-warning text-dark">Eid Gift</span>
+                                    {% else %}
+                                    <span class="badge bg-info">{{ voucher.donation_type }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Mode:</strong></td>
+                                <td>
+                                    {% if voucher.donation_mode == 'One-time' %}
+                                    <span class="badge bg-secondary">One-time</span>
+                                    {% elif voucher.donation_mode == 'Monthly' %}
+                                    <span class="badge bg-dark">Monthly</span>
+                                    {% else %}
+                                    <span class="badge bg-light text-dark">{{ voucher.donation_mode }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-6">
+                        <h5 class="text-muted">Recipient Information</h5>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Name:</strong></td>
+                                <td>{{ recipient.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>CNIC:</strong></td>
+                                <td>{{ recipient.cnic }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Phone:</strong></td>
+                                <td>{{ recipient.phone }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Address:</strong></td>
+                                <td>{{ recipient.address }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <div class="bg-light p-3 rounded">
+                            <h4 class="text-center mb-3">Donation Amount</h4>
+                            <h2 class="text-center mb-0">Rs. {{ "{:,.2f}".format(voucher.amount) }}</h2>
+                        </div>
+                    </div>
+                </div>
+
+                {% if voucher.notes %}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card mb-0">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">Notes</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="mb-0">{{ voucher.notes }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="row mt-5">
+                    <div class="col-6 text-center">
+                        <div class="border-top border-dark pt-2">
+                            <p>Recipient Signature</p>
+                        </div>
+                    </div>
+                    <div class="col-6 text-center">
+                        <div class="border-top border-dark pt-2">
+                            <p>Authorized Signature</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer text-center">
+                <small class="text-muted">This voucher was generated on {{ voucher.created_at.strftime('%d-%m-%Y %H:%M:%S') }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function printVoucher() {
+        const printContent = document.getElementById('voucher-card').innerHTML;
+        const originalContent = document.body.innerHTML;
+        
+        document.body.innerHTML = `
+            <html>
+            <head>
+                <title>Donation Voucher #{{ voucher.id }}</title>
+                <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+                <style>
+                    body { font-family: Arial, sans-serif; }
+                    .card { border: 1px solid #ccc; margin: 20px auto; max-width: 800px; }
+                    .card-header { background-color: #375a7f; color: white; padding: 15px; text-align: center; }
+                    .card-body { padding: 20px; }
+                    .table { width: 100%; }
+                    .badge { display: inline-block; padding: 0.25em 0.4em; font-size: 75%; font-weight: 700; line-height: 1; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: 0.25rem; }
+                    .bg-primary { background-color: #375a7f; color: white; }
+                    .bg-success { background-color: #00bc8c; color: white; }
+                    .bg-danger { background-color: #e74c3c; color: white; }
+                    .bg-warning { background-color: #f39c12; color: #212529; }
+                    .bg-info { background-color: #3498db; color: white; }
+                    .bg-secondary { background-color: #444; color: white; }
+                    .bg-light { background-color: #f8f9fa; color: #212529; }
+                    .text-center { text-align: center; }
+                    .border-top { border-top: 1px solid #343a40 !important; }
+                    .pt-2 { padding-top: 0.5rem !important; }
+                    .mb-0 { margin-bottom: 0 !important; }
+                    .mb-3 { margin-bottom: 1rem !important; }
+                    .mb-4 { margin-bottom: 1.5rem !important; }
+                    .mt-5 { margin-top: 3rem !important; }
+                    .text-muted { color: #6c757d !important; }
+                    .rounded { border-radius: 0.25rem !important; }
+                    .p-3 { padding: 1rem !important; }
+                    @media print {
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="card">
+                    ${printContent}
+                </div>
+                <div class="text-center no-print">
+                    <button onclick="window.print()" class="btn btn-primary mt-3">Print</button>
+                    <button onclick="window.close()" class="btn btn-secondary mt-3">Close</button>
+                </div>
+            </body>
+            </html>
+        `;
+        
+        window.setTimeout(function() {
+            window.print();
+            document.body.innerHTML = originalContent;
+        }, 500);
+        
+        return true;
+    }
+</script>
+{% endblock %}

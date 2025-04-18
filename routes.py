@@ -116,7 +116,7 @@ def create_voucher():
             db.session.commit()
             
             flash('Voucher created successfully!', 'success')
-            return redirect(url_for('create_voucher'))
+            return redirect(url_for('view_voucher', voucher_id=new_voucher.id))
         except Exception as e:
             db.session.rollback()
             flash(f'Error creating voucher: {str(e)}', 'danger')
@@ -126,6 +126,15 @@ def create_voucher():
     recipients = Recipient.query.all()
     return render_template('create_voucher.html', recipients=recipients)
 
+@app.route('/vouchers/<int:voucher_id>', methods=['GET'])
+def view_voucher(voucher_id):
+    voucher = Voucher.query.get_or_404(voucher_id)
+    recipient = Recipient.query.get(voucher.recipient_id)
+    
+    return render_template('view_voucher.html', 
+                           voucher=voucher, 
+                           recipient=recipient)
+
 # Reporting
 @app.route('/reports', methods=['GET'])
 def reports():
@@ -133,69 +142,9 @@ def reports():
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     donation_type = request.args.get('donation_type')
+    donation_mode = request.args.get('donation_mode')
     recipient_name = request.args.get('recipient_name')
-    
-    # Start with base query
-    query = db.session.query(
-        Voucher, 
-        Recipient.name.label('recipient_name')
-    ).join(Recipient)
-    
-    # Apply filters
-    if start_date:
-        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-        query = query.filter(Voucher.donation_date >= start_date)
-    
-    if end_date:
-        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-        query = query.filter(Voucher.donation_date <= end_date)
-    
-    if donation_type and donation_type != 'All':
-        query = query.filter(Voucher.donation_type == donation_type)
-    
-    if recipient_name:
-        query = query.filter(Recipient.name.ilike(f'%{recipient_name}%'))
-    
-    # Execute query
-    vouchers = query.order_by(desc(Voucher.donation_date)).all()
-    
-    # Calculate totals by donation type
-    totals_by_type = db.session.query(
-        Voucher.donation_type,
-        func.sum(Voucher.amount).label('total')
-    ).group_by(Voucher.donation_type).all()
-    
-    # Convert to dictionary for easy access in template
-    totals = {t.donation_type: t.total for t in totals_by_type}
-    
-    # Get grand total
-    grand_total = sum(t.total for t in totals_by_type)
-    
-    return render_template(
-        'reports.html',
-        vouchers=vouchers,
-        totals=totals,
-        grand_total=grand_total,
-        current_filters={
-            'start_date': start_date,
-            'end_date': end_date,
-            'donation_type': donation_type,
-            'recipient_name': recipient_name
-        }
-    )
-
-# Export to CSV
-@app.route('/reports/export', methods=['GET'])
-def export_reports():
-    import csv
-    from io import StringIO
-    from flask import Response
-    
-    # Get filter parameters
-    start_date = request.args.get('start_date')
-    end_date = request.args.get('end_date')
-    donation_type = request.args.get('donation_type')
-    recipient_name = request.args.get('recipient_name')
+    report_type = request.args.get('report_type', 'daily')  # Default to daily report
     
     # Start with base query
     query = db.session.query(
@@ -216,6 +165,164 @@ def export_reports():
     if donation_type and donation_type != 'All':
         query = query.filter(Voucher.donation_type == donation_type)
     
+    if donation_mode and donation_mode != 'All':
+        query = query.filter(Voucher.donation_mode == donation_mode)
+    
+    if recipient_name:
+        query = query.filter(Recipient.name.ilike(f'%{recipient_name}%'))
+    
+    # Execute query
+    vouchers = query.order_by(desc(Voucher.donation_date)).all()
+    
+    # Calculate totals by donation type
+    totals_by_type = db.session.query(
+        Voucher.donation_type,
+        func.sum(Voucher.amount).label('total')
+    )
+    
+    # Apply the same filters to the totals query
+    if start_date:
+        totals_by_type = totals_by_type.filter(Voucher.donation_date >= start_date)
+    
+    if end_date:
+        totals_by_type = totals_by_type.filter(Voucher.donation_date <= end_date)
+    
+    if recipient_name:
+        totals_by_type = totals_by_type.join(Recipient).filter(Recipient.name.ilike(f'%{recipient_name}%'))
+    
+    if donation_mode and donation_mode != 'All':
+        totals_by_type = totals_by_type.filter(Voucher.donation_mode == donation_mode)
+    
+    # Group and execute
+    totals_by_type = totals_by_type.group_by(Voucher.donation_type).all()
+    
+    # Convert to dictionary for easy access in template
+    totals = {t.donation_type: t.total for t in totals_by_type}
+    
+    # Get grand total
+    grand_total = sum(t.total for t in totals_by_type) if totals_by_type else 0
+    
+    # Get monthly/yearly summaries if needed
+    monthly_summary = None
+    yearly_summary = None
+    
+    if report_type == 'monthly' or report_type == 'yearly':
+        # Monthly summary
+        monthly_query = db.session.query(
+            extract('year', Voucher.donation_date).label('year'),
+            extract('month', Voucher.donation_date).label('month'),
+            func.sum(Voucher.amount).label('total')
+        )
+        
+        # Apply the same filters
+        if start_date:
+            monthly_query = monthly_query.filter(Voucher.donation_date >= start_date)
+        
+        if end_date:
+            monthly_query = monthly_query.filter(Voucher.donation_date <= end_date)
+        
+        if donation_type and donation_type != 'All':
+            monthly_query = monthly_query.filter(Voucher.donation_type == donation_type)
+        
+        if donation_mode and donation_mode != 'All':
+            monthly_query = monthly_query.filter(Voucher.donation_mode == donation_mode)
+        
+        if recipient_name:
+            monthly_query = monthly_query.join(Recipient).filter(Recipient.name.ilike(f'%{recipient_name}%'))
+        
+        # Group and execute
+        monthly_summary = monthly_query.group_by('year', 'month').order_by('year', 'month').all()
+    
+    if report_type == 'yearly':
+        # Yearly summary
+        yearly_query = db.session.query(
+            extract('year', Voucher.donation_date).label('year'),
+            func.sum(Voucher.amount).label('total')
+        )
+        
+        # Apply the same filters
+        if start_date:
+            yearly_query = yearly_query.filter(Voucher.donation_date >= start_date)
+        
+        if end_date:
+            yearly_query = yearly_query.filter(Voucher.donation_date <= end_date)
+        
+        if donation_type and donation_type != 'All':
+            yearly_query = yearly_query.filter(Voucher.donation_type == donation_type)
+        
+        if donation_mode and donation_mode != 'All':
+            yearly_query = yearly_query.filter(Voucher.donation_mode == donation_mode)
+        
+        if recipient_name:
+            yearly_query = yearly_query.join(Recipient).filter(Recipient.name.ilike(f'%{recipient_name}%'))
+        
+        # Group and execute
+        yearly_summary = yearly_query.group_by('year').order_by('year').all()
+    
+    # Get list of all donation types and modes for filtering
+    all_donation_types = db.session.query(Voucher.donation_type).distinct().all()
+    all_donation_types = [dt[0] for dt in all_donation_types]
+    
+    all_donation_modes = db.session.query(Voucher.donation_mode).distinct().all()
+    all_donation_modes = [dm[0] for dm in all_donation_modes]
+    
+    return render_template(
+        'reports.html',
+        vouchers=vouchers,
+        totals=totals,
+        grand_total=grand_total,
+        monthly_summary=monthly_summary,
+        yearly_summary=yearly_summary,
+        all_donation_types=all_donation_types,
+        all_donation_modes=all_donation_modes,
+        report_type=report_type,
+        current_filters={
+            'start_date': start_date,
+            'end_date': end_date,
+            'donation_type': donation_type,
+            'donation_mode': donation_mode,
+            'recipient_name': recipient_name,
+            'report_type': report_type
+        }
+    )
+
+# Export to CSV
+@app.route('/reports/export', methods=['GET'])
+def export_reports():
+    import csv
+    from io import StringIO
+    from flask import Response
+    
+    # Get filter parameters
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    donation_type = request.args.get('donation_type')
+    donation_mode = request.args.get('donation_mode')
+    recipient_name = request.args.get('recipient_name')
+    report_type = request.args.get('report_type', 'daily')
+    
+    # Start with base query
+    query = db.session.query(
+        Voucher, 
+        Recipient.name.label('recipient_name'),
+        Recipient.cnic.label('recipient_cnic')
+    ).join(Recipient)
+    
+    # Apply filters
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        query = query.filter(Voucher.donation_date >= start_date)
+    
+    if end_date:
+        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        query = query.filter(Voucher.donation_date <= end_date)
+    
+    if donation_type and donation_type != 'All':
+        query = query.filter(Voucher.donation_type == donation_type)
+    
+    if donation_mode and donation_mode != 'All':
+        query = query.filter(Voucher.donation_mode == donation_mode)
+    
     if recipient_name:
         query = query.filter(Recipient.name.ilike(f'%{recipient_name}%'))
     
@@ -226,26 +333,106 @@ def export_reports():
     output = StringIO()
     writer = csv.writer(output)
     
-    # Write header
-    writer.writerow(['Voucher ID', 'Recipient Name', 'CNIC', 'Donation Type', 
-                    'Amount', 'Donation Mode', 'Date', 'Notes'])
+    if report_type == 'daily':
+        # Detailed report with all vouchers
+        # Write header
+        writer.writerow(['Voucher ID', 'Recipient Name', 'CNIC', 'Donation Type', 
+                        'Amount', 'Donation Mode', 'Date', 'Notes'])
+        
+        # Write data
+        for voucher, recipient_name, recipient_cnic in vouchers:
+            writer.writerow([
+                voucher.id,
+                recipient_name,
+                recipient_cnic,
+                voucher.donation_type,
+                voucher.amount,
+                voucher.donation_mode,
+                voucher.donation_date.strftime('%Y-%m-%d'),
+                voucher.notes
+            ])
     
-    # Write data
-    for voucher, recipient_name, recipient_cnic in vouchers:
-        writer.writerow([
-            voucher.id,
-            recipient_name,
-            recipient_cnic,
-            voucher.donation_type,
-            voucher.amount,
-            voucher.donation_mode,
-            voucher.donation_date.strftime('%Y-%m-%d'),
-            voucher.notes
-        ])
+    elif report_type == 'monthly':
+        # Monthly summary report
+        monthly_query = db.session.query(
+            extract('year', Voucher.donation_date).label('year'),
+            extract('month', Voucher.donation_date).label('month'),
+            Voucher.donation_type,
+            func.sum(Voucher.amount).label('total')
+        )
+        
+        # Apply the same filters
+        if start_date:
+            monthly_query = monthly_query.filter(Voucher.donation_date >= start_date)
+        
+        if end_date:
+            monthly_query = monthly_query.filter(Voucher.donation_date <= end_date)
+        
+        if donation_type and donation_type != 'All':
+            monthly_query = monthly_query.filter(Voucher.donation_type == donation_type)
+        
+        if donation_mode and donation_mode != 'All':
+            monthly_query = monthly_query.filter(Voucher.donation_mode == donation_mode)
+        
+        if recipient_name:
+            monthly_query = monthly_query.join(Recipient).filter(Recipient.name.ilike(f'%{recipient_name}%'))
+        
+        # Group and execute
+        monthly_data = monthly_query.group_by('year', 'month', Voucher.donation_type).order_by('year', 'month').all()
+        
+        # Write header
+        writer.writerow(['Year', 'Month', 'Donation Type', 'Total Amount'])
+        
+        # Write data
+        for year, month, donation_type, total in monthly_data:
+            month_name = datetime(2000, int(month), 1).strftime('%B')
+            writer.writerow([int(year), f"{int(month)} - {month_name}", donation_type, total])
+    
+    elif report_type == 'yearly':
+        # Yearly summary report
+        yearly_query = db.session.query(
+            extract('year', Voucher.donation_date).label('year'),
+            Voucher.donation_type,
+            func.sum(Voucher.amount).label('total')
+        )
+        
+        # Apply the same filters
+        if start_date:
+            yearly_query = yearly_query.filter(Voucher.donation_date >= start_date)
+        
+        if end_date:
+            yearly_query = yearly_query.filter(Voucher.donation_date <= end_date)
+        
+        if donation_type and donation_type != 'All':
+            yearly_query = yearly_query.filter(Voucher.donation_type == donation_type)
+        
+        if donation_mode and donation_mode != 'All':
+            yearly_query = yearly_query.filter(Voucher.donation_mode == donation_mode)
+        
+        if recipient_name:
+            yearly_query = yearly_query.join(Recipient).filter(Recipient.name.ilike(f'%{recipient_name}%'))
+        
+        # Group and execute
+        yearly_data = yearly_query.group_by('year', Voucher.donation_type).order_by('year').all()
+        
+        # Write header
+        writer.writerow(['Year', 'Donation Type', 'Total Amount'])
+        
+        # Write data
+        for year, donation_type, total in yearly_data:
+            writer.writerow([int(year), donation_type, total])
+    
+    # Create file name based on report type
+    filename = f"donation_report_{report_type}"
+    if start_date:
+        filename += f"_from_{start_date.strftime('%Y-%m-%d')}"
+    if end_date:
+        filename += f"_to_{end_date.strftime('%Y-%m-%d')}"
+    filename += ".csv"
     
     # Create response
     return Response(
         output.getvalue(),
         mimetype="text/csv",
-        headers={"Content-disposition": "attachment; filename=donation_report.csv"}
+        headers={"Content-disposition": f"attachment; filename={filename}"}
     )

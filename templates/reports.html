@@ -20,6 +20,14 @@
                 <form id="reportFilterForm" action="{{ url_for('reports') }}" method="GET">
                     <div class="row g-3">
                         <div class="col-md-3">
+                            <label for="report_type" class="form-label">Report Type</label>
+                            <select class="form-select" id="report_type" name="report_type">
+                                <option value="daily" {% if current_filters.report_type == 'daily' %}selected{% endif %}>Daily Report</option>
+                                <option value="monthly" {% if current_filters.report_type == 'monthly' %}selected{% endif %}>Monthly Summary</option>
+                                <option value="yearly" {% if current_filters.report_type == 'yearly' %}selected{% endif %}>Yearly Summary</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
                             <label for="start_date" class="form-label">Start Date</label>
                             <input type="date" class="form-control" id="start_date" name="start_date" 
                                   value="{{ current_filters.start_date or '' }}">
@@ -33,11 +41,33 @@
                             <label for="donation_type" class="form-label">Donation Type</label>
                             <select class="form-select" id="donation_type" name="donation_type">
                                 <option value="All" {% if not current_filters.donation_type or current_filters.donation_type == 'All' %}selected{% endif %}>All Types</option>
+                                {% if all_donation_types %}
+                                    {% for type in all_donation_types %}
+                                    <option value="{{ type }}" {% if current_filters.donation_type == type %}selected{% endif %}>{{ type }}</option>
+                                    {% endfor %}
+                                {% else %}
                                 <option value="Zakat" {% if current_filters.donation_type == 'Zakat' %}selected{% endif %}>Zakat</option>
                                 <option value="Sadqa" {% if current_filters.donation_type == 'Sadqa' %}selected{% endif %}>Sadqa</option>
                                 <option value="Marriage Salami" {% if current_filters.donation_type == 'Marriage Salami' %}selected{% endif %}>Marriage Salami</option>
                                 <option value="Eid Gift" {% if current_filters.donation_type == 'Eid Gift' %}selected{% endif %}>Eid Gift</option>
                                 <option value="Other" {% if current_filters.donation_type == 'Other' %}selected{% endif %}>Other</option>
+                                {% endif %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="donation_mode" class="form-label">Donation Mode</label>
+                            <select class="form-select" id="donation_mode" name="donation_mode">
+                                <option value="All" {% if not current_filters.donation_mode or current_filters.donation_mode == 'All' %}selected{% endif %}>All Modes</option>
+                                {% if all_donation_modes %}
+                                    {% for mode in all_donation_modes %}
+                                    <option value="{{ mode }}" {% if current_filters.donation_mode == mode %}selected{% endif %}>{{ mode }}</option>
+                                    {% endfor %}
+                                {% else %}
+                                <option value="One-time" {% if current_filters.donation_mode == 'One-time' %}selected{% endif %}>One-time</option>
+                                <option value="Monthly" {% if current_filters.donation_mode == 'Monthly' %}selected{% endif %}>Monthly</option>
+                                <option value="Quarterly" {% if current_filters.donation_mode == 'Quarterly' %}selected{% endif %}>Quarterly</option>
+                                <option value="Yearly" {% if current_filters.donation_mode == 'Yearly' %}selected{% endif %}>Yearly</option>
+                                {% endif %}
                             </select>
                         </div>
                         <div class="col-md-3">
@@ -59,6 +89,9 @@
                                    class="btn btn-success">
                                     <i class="fas fa-file-csv"></i> Export to CSV
                                 </a>
+                                <button type="button" onclick="printReport()" class="btn btn-info ms-2">
+                                    <i class="fas fa-print"></i> Print Report
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -132,7 +165,88 @@
     </div>
 </div>
 
-<!-- Vouchers List -->
+<!-- Report Content Based on Type -->
+
+{% if report_type == 'monthly' %}
+<!-- Monthly Report -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> Monthly Summary</h5>
+            </div>
+            <div class="card-body">
+                {% if monthly_summary %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Year</th>
+                                <th>Month</th>
+                                <th>Total Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for year, month, total in monthly_summary %}
+                            <tr>
+                                <td>{{ year|int }}</td>
+                                <td>{{ month|int }} - {{ datetime(2000, month|int, 1).strftime('%B') }}</td>
+                                <td>Rs. {{ "{:,.2f}".format(total) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No monthly summary data available for the selected filters.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% elif report_type == 'yearly' %}
+<!-- Yearly Report -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> Yearly Summary</h5>
+            </div>
+            <div class="card-body">
+                {% if yearly_summary %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Year</th>
+                                <th>Total Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for year, total in yearly_summary %}
+                            <tr>
+                                <td>{{ year|int }}</td>
+                                <td>Rs. {{ "{:,.2f}".format(total) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No yearly summary data available for the selected filters.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<!-- Daily Report (Vouchers List) -->
 <div class="row">
     <div class="col-12">
         <div class="card">
@@ -151,11 +265,11 @@
                                 <th>Type</th>
                                 <th>Mode</th>
                                 <th>Amount</th>
-                                <th>Notes</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for voucher, recipient_name in vouchers %}
+                            {% for voucher, recipient_name, recipient_cnic in vouchers %}
                             <tr>
                                 <td>{{ voucher.id }}</td>
                                 <td>{{ voucher.donation_date.strftime('%d-%m-%Y') }}</td>
@@ -184,15 +298,19 @@
                                 </td>
                                 <td>Rs. {{ "{:,.2f}".format(voucher.amount) }}</td>
                                 <td>
-                                    {% if voucher.notes %}
-                                    <button type="button" class="btn btn-sm btn-outline-info" 
-                                            data-bs-toggle="tooltip" data-bs-placement="top" 
-                                            title="{{ voucher.notes }}">
-                                        <i class="fas fa-sticky-note"></i>
-                                    </button>
-                                    {% else %}
-                                    <span class="text-muted">-</span>
-                                    {% endif %}
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('view_voucher', voucher_id=voucher.id) }}" class="btn btn-outline-primary" 
+                                           data-bs-toggle="tooltip" data-bs-placement="top" title="View Voucher">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if voucher.notes %}
+                                        <button type="button" class="btn btn-outline-info" 
+                                                data-bs-toggle="tooltip" data-bs-placement="top" 
+                                                title="{{ voucher.notes }}">
+                                            <i class="fas fa-sticky-note"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -208,11 +326,115 @@
         </div>
     </div>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    $(document).ready(function() {
+    function printReport() {
+        const printContent = document.querySelector('.container').innerHTML;
+        const originalContent = document.body.innerHTML;
+        
+        // Create filter summary text
+        let filterSummary = "All Donations";
+        const reportType = document.getElementById('report_type').options[document.getElementById('report_type').selectedIndex].text;
+        const startDate = document.getElementById('start_date').value;
+        const endDate = document.getElementById('end_date').value;
+        const donationType = document.getElementById('donation_type').options[document.getElementById('donation_type').selectedIndex].text;
+        const donationMode = document.getElementById('donation_mode').options[document.getElementById('donation_mode').selectedIndex].text;
+        const recipientName = document.getElementById('recipient_name').value;
+        
+        if (startDate || endDate || donationType !== "All Types" || donationMode !== "All Modes" || recipientName) {
+            filterSummary = reportType;
+            
+            if (startDate && endDate) {
+                filterSummary += ` from ${startDate} to ${endDate}`;
+            } else if (startDate) {
+                filterSummary += ` from ${startDate}`;
+            } else if (endDate) {
+                filterSummary += ` until ${endDate}`;
+            }
+            
+            if (donationType !== "All Types") {
+                filterSummary += `, Type: ${donationType}`;
+            }
+            
+            if (donationMode !== "All Modes") {
+                filterSummary += `, Mode: ${donationMode}`;
+            }
+            
+            if (recipientName) {
+                filterSummary += `, Recipient: ${recipientName}`;
+            }
+        }
+        
+        // Create print view
+        document.body.innerHTML = `
+            <html>
+            <head>
+                <title>Donation Report</title>
+                <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+                <style>
+                    @media print {
+                        body { margin: 0; }
+                        .no-print { display: none !important; }
+                        .card { border: 1px solid #dee2e6; margin-bottom: 20px; page-break-inside: avoid; }
+                        .card-header { background-color: #f8f9fa; border-bottom: 1px solid #dee2e6; }
+                        .table { width: 100%; border-collapse: collapse; }
+                        .table th, .table td { border: 1px solid #dee2e6; padding: 8px; }
+                        .table th { background-color: #f8f9fa; }
+                        .badge { display: inline-block; padding: 0.25em 0.4em; font-weight: 700; line-height: 1; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: 0.25rem; }
+                        .bg-primary { background-color: #375a7f; color: white; }
+                        .bg-success { background-color: #00bc8c; color: white; }
+                        .bg-info { background-color: #3498db; color: white; }
+                        .bg-warning { background-color: #f39c12; color: #212529; }
+                        .bg-danger { background-color: #e74c3c; color: white; }
+                        .bg-secondary { background-color: #444; color: white; }
+                        .text-white { color: white; }
+                        .text-muted { color: #6c757d; }
+                        .print-header { text-align: center; margin-bottom: 20px; }
+                        .print-footer { text-align: center; margin-top: 30px; font-size: 0.8em; color: #6c757d; border-top: 1px solid #dee2e6; padding-top: 10px; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="print-header">
+                        <h1>Donation ERP System</h1>
+                        <h3>Donation Report</h3>
+                        <p class="text-muted">${filterSummary}</p>
+                        <p>Generated on: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</p>
+                    </div>
+                    
+                    <div id="printable-content">
+                        ${document.querySelector('.row.mb-4:nth-child(3)').outerHTML}
+                        ${document.querySelector('.row:nth-child(4)').outerHTML}
+                    </div>
+                    
+                    <div class="print-footer">
+                        <p>© ${new Date().getFullYear()} Donation ERP System</p>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-4 no-print">
+                    <button onclick="window.print()" class="btn btn-primary">Print Now</button>
+                    <button onclick="window.close()" class="btn btn-secondary ms-2">Close</button>
+                </div>
+            </body>
+            </html>
+        `;
+        
+        // Delay printing to ensure styling is applied
+        setTimeout(function() {
+            window.print();
+            document.body.innerHTML = originalContent;
+            
+            // Reinitialize event handlers
+            initEventHandlers();
+        }, 500);
+    }
+    
+    function initEventHandlers() {
         // Initialize tooltips
         const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
         const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
@@ -240,6 +462,10 @@
         // Trigger change on page load to set initial constraints
         $('#start_date').trigger('change');
         $('#end_date').trigger('change');
+    }
+    
+    $(document).ready(function() {
+        initEventHandlers();
     });
 </script>
 {% endblock %}
