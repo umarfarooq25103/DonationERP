@@ -2,6 +2,10 @@
 
 {% block title %}Dashboard - Donation ERP System{% endblock %}
 
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
 {% block content %}
 <div class="row">
     <div class="col-12">
@@ -37,6 +41,57 @@
     </div>
 </div>
 
+<!-- Charts Section -->
+<div class="row mb-4">
+    <!-- Donation Types Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Donations by Type</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="donationTypeChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Donation Modes Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Donations by Mode</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="donationModeChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Monthly Trend Chart -->
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-line"></i> Monthly Donation Trends</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="monthlyTrendChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recipients by Income Category -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-users"></i> Recipients by Income</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="incomeChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Quick Actions -->
 <div class="row mb-4">
     <div class="col-12">
@@ -46,14 +101,24 @@
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-3 mb-3">
                         <a href="{{ url_for('add_recipient') }}" class="btn btn-outline-primary btn-lg w-100">
-                            <i class="fas fa-user-plus"></i> Add New Recipient
+                            <i class="fas fa-user-plus"></i> Add Recipient
                         </a>
                     </div>
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-3 mb-3">
                         <a href="{{ url_for('create_voucher') }}" class="btn btn-outline-success btn-lg w-100">
-                            <i class="fas fa-file-invoice"></i> Create New Voucher
+                            <i class="fas fa-file-invoice"></i> Create Voucher
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('reports') }}" class="btn btn-outline-info btn-lg w-100">
+                            <i class="fas fa-chart-bar"></i> View Reports
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('reports') }}?report_type=monthly" class="btn btn-outline-warning btn-lg w-100">
+                            <i class="fas fa-calendar-alt"></i> Monthly Summary
                         </a>
                     </div>
                 </div>
@@ -81,6 +146,7 @@
                                 <th>Amount</th>
                                 <th>Date</th>
                                 <th>Mode</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -93,6 +159,10 @@
                                     <span class="badge bg-primary">Zakat</span>
                                     {% elif voucher.donation_type == 'Sadqa' %}
                                     <span class="badge bg-success">Sadqa</span>
+                                    {% elif voucher.donation_type == 'Marriage Salami' %}
+                                    <span class="badge bg-danger">Marriage Salami</span>
+                                    {% elif voucher.donation_type == 'Eid Gift' %}
+                                    <span class="badge bg-warning text-dark">Eid Gift</span>
                                     {% else %}
                                     <span class="badge bg-info">{{ voucher.donation_type }}</span>
                                     {% endif %}
@@ -102,9 +172,21 @@
                                 <td>
                                     {% if voucher.donation_mode == 'One-time' %}
                                     <span class="badge bg-secondary">One-time</span>
+                                    {% elif voucher.donation_mode == 'Monthly' %}
+                                    <span class="badge bg-dark">Monthly</span>
                                     {% else %}
                                     <span class="badge bg-warning text-dark">{{ voucher.donation_mode }}</span>
                                     {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('view_voucher', voucher_id=voucher.id) }}" class="btn btn-outline-primary" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('edit_voucher', voucher_id=voucher.id) }}" class="btn btn-outline-warning" title="Edit Voucher">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -123,4 +205,187 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Chart.js Configuration
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    color: 'white'
+                }
+            }
+        }
+    };
+    
+    // Common Colors
+    const colors = [
+        '#375a7f', // Primary
+        '#00bc8c', // Success
+        '#e74c3c', // Danger
+        '#f39c12', // Warning
+        '#3498db', // Info
+        '#6c757d', // Secondary
+        '#6610f2', // Indigo
+        '#6f42c1', // Purple
+        '#fd7e14', // Orange
+        '#20c997'  // Teal
+    ];
+    
+    // Function to get colors with transparency
+    function getTransparentColors(alpha = 0.8) {
+        return colors.map(color => {
+            return color + (alpha * 255).toString(16).padStart(2, '0');
+        });
+    }
+    
+    // Donation Types Chart
+    const donationTypeCtx = document.getElementById('donationTypeChart').getContext('2d');
+    const donationTypeChart = new Chart(donationTypeCtx, {
+        type: 'pie',
+        data: {
+            labels: {{ donation_types|tojson }},
+            datasets: [{
+                data: {{ donation_totals|tojson }},
+                backgroundColor: getTransparentColors(0.7),
+                borderColor: colors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            ...chartOptions,
+            plugins: {
+                ...chartOptions.plugins,
+                title: {
+                    display: true,
+                    text: 'Donation Amounts by Type',
+                    color: 'white'
+                }
+            }
+        }
+    });
+    
+    // Donation Modes Chart
+    const donationModeCtx = document.getElementById('donationModeChart').getContext('2d');
+    const donationModeChart = new Chart(donationModeCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ donation_modes|tojson }},
+            datasets: [{
+                label: 'Amount (Rs.)',
+                data: {{ donation_mode_totals|tojson }},
+                backgroundColor: getTransparentColors(0.7),
+                borderColor: colors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            ...chartOptions,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: 'white'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: 'white'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Monthly Trend Chart
+    const monthlyTrendCtx = document.getElementById('monthlyTrendChart').getContext('2d');
+    const monthlyTrendChart = new Chart(monthlyTrendCtx, {
+        type: 'line',
+        data: {
+            labels: {{ months|tojson }},
+            datasets: [{
+                label: 'Monthly Donations (Rs.)',
+                data: {{ monthly_totals|tojson }},
+                backgroundColor: 'rgba(52, 152, 219, 0.5)',
+                borderColor: '#3498db',
+                borderWidth: 2,
+                tension: 0.1,
+                fill: true
+            }]
+        },
+        options: {
+            ...chartOptions,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: 'white'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: 'white'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Recipients by Income Category Chart
+    const incomeCtx = document.getElementById('incomeChart').getContext('2d');
+    const incomeChart = new Chart(incomeCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Low Income', 'Middle Income', 'High Income'],
+            datasets: [{
+                data: [{{ low_income_count }}, {{ middle_income_count }}, {{ high_income_count }}],
+                backgroundColor: [
+                    'rgba(231, 76, 60, 0.7)',  // Danger (low income)
+                    'rgba(243, 156, 18, 0.7)',  // Warning (middle income)
+                    'rgba(0, 188, 140, 0.7)'    // Success (high income)
+                ],
+                borderColor: [
+                    '#e74c3c',  // Danger
+                    '#f39c12',  // Warning
+                    '#00bc8c'   // Success
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            ...chartOptions,
+            plugins: {
+                ...chartOptions.plugins,
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = {{ recipient_count }};
+                            const percentage = Math.round((value / total) * 100);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
 {% endblock %}

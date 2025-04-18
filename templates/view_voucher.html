@@ -10,6 +10,12 @@
             <button class="btn btn-outline-primary me-2" onclick="printVoucher()">
                 <i class="fas fa-print"></i> Print Voucher
             </button>
+            <a href="{{ url_for('edit_voucher', voucher_id=voucher.id) }}" class="btn btn-outline-warning me-2">
+                <i class="fas fa-edit"></i> Edit Voucher
+            </a>
+            <button type="button" class="btn btn-outline-danger me-2" data-bs-toggle="modal" data-bs-target="#deleteVoucherModal">
+                <i class="fas fa-trash-alt"></i> Delete Voucher
+            </button>
             <a href="{{ url_for('create_voucher') }}" class="btn btn-outline-secondary">
                 <i class="fas fa-plus"></i> Create New Voucher
             </a>
@@ -195,3 +201,32 @@
     }
 </script>
 {% endblock %}
+
+<!-- Delete Voucher Confirmation Modal -->
+<div class="modal fade" id="deleteVoucherModal" tabindex="-1" aria-labelledby="deleteVoucherModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteVoucherModalLabel">
+                    <i class="fas fa-trash-alt"></i> Confirm Deletion
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    Are you sure you want to delete Voucher #{{ voucher.id }}?
+                </p>
+                <p>This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ url_for('delete_voucher', voucher_id=voucher.id) }}" method="POST">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash-alt"></i> Delete Permanently
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

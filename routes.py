@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import render_template, request, redirect, url_for, flash, jsonify
 from sqlalchemy import extract, desc, func
 from app import app, db
@@ -30,11 +30,64 @@ def index():
     # Get recent vouchers
     recent_vouchers = Voucher.query.order_by(desc(Voucher.created_at)).limit(5).all()
     
+    # Get donation statistics by type
+    donation_by_type = db.session.query(
+        Voucher.donation_type,
+        func.sum(Voucher.amount).label('total')
+    ).group_by(Voucher.donation_type).all()
+    
+    donation_types = [item[0] for item in donation_by_type]
+    donation_totals = [float(item[1]) for item in donation_by_type]
+    
+    # Get donation statistics by mode
+    donation_by_mode = db.session.query(
+        Voucher.donation_mode,
+        func.sum(Voucher.amount).label('total')
+    ).group_by(Voucher.donation_mode).all()
+    
+    donation_modes = [item[0] for item in donation_by_mode]
+    donation_mode_totals = [float(item[1]) for item in donation_by_mode]
+    
+    # Count recipients by income category
+    low_income_count = Recipient.query.filter(Recipient.monthly_income < 15000).count()
+    middle_income_count = Recipient.query.filter(Recipient.monthly_income.between(15000, 30000)).count()
+    high_income_count = Recipient.query.filter(Recipient.monthly_income > 30000).count()
+    
+    # Get monthly donation trends (last 6 months)
+    current_date = datetime.now()
+    six_months_ago = current_date - timedelta(days=180)
+    
+    monthly_donations = db.session.query(
+        extract('year', Voucher.donation_date).label('year'),
+        extract('month', Voucher.donation_date).label('month'),
+        func.sum(Voucher.amount).label('total')
+    ).filter(
+        Voucher.donation_date >= six_months_ago
+    ).group_by('year', 'month').order_by('year', 'month').all()
+    
+    # Format for chart display
+    months = []
+    monthly_totals = []
+    
+    for year, month, total in monthly_donations:
+        month_name = datetime(int(year), int(month), 1).strftime('%b %Y')
+        months.append(month_name)
+        monthly_totals.append(float(total))
+    
     return render_template('index.html', 
                           recipient_count=recipient_count,
                           voucher_count=voucher_count,
                           total_donations=total_donations,
-                          recent_vouchers=recent_vouchers)
+                          recent_vouchers=recent_vouchers,
+                          donation_types=donation_types,
+                          donation_totals=donation_totals,
+                          donation_modes=donation_modes, 
+                          donation_mode_totals=donation_mode_totals,
+                          low_income_count=low_income_count,
+                          middle_income_count=middle_income_count,
+                          high_income_count=high_income_count,
+                          months=months,
+                          monthly_totals=monthly_totals)
 
 # Recipient Management
 @app.route('/recipients', methods=['GET'])
