@@ -159,24 +159,88 @@
                 // Display recipient details
                 $('#recipientDetails').html(detailsHtml);
                 
-                // Simulating loading recipient details
-                // In a real application, you would fetch this from the server
+                // Loading indicator for recent vouchers
                 $('#recentVouchers').html(`
                     <div class="alert alert-info">
                         <i class="fas fa-spinner fa-spin"></i> Loading recent voucher history...
                     </div>
                 `);
                 
-                // Simulated response for demonstration purposes
-                // You should replace this with an actual AJAX call to get recipient details
-                setTimeout(function() {
-                    // This is just a placeholder - in a real app you'd fetch this data
-                    $('#recentVouchers').html(`
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle"></i> No recent vouchers found for this recipient.
-                        </div>
-                    `);
-                }, 1000);
+                // Fetch recent vouchers for this recipient via AJAX
+                $.ajax({
+                    url: `/api/recipient/${recipientId}/vouchers`,
+                    method: 'GET',
+                    success: function(data) {
+                        if (data.vouchers && data.vouchers.length > 0) {
+                            let vouchersHtml = `
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Date</th>
+                                                <th>Type</th>
+                                                <th>Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                            `;
+                            
+                            data.vouchers.forEach(function(voucher) {
+                                vouchersHtml += `
+                                    <tr>
+                                        <td>${voucher.id}</td>
+                                        <td>${voucher.donation_date}</td>
+                                        <td>
+                                            ${getBadgeForDonationType(voucher.donation_type)}
+                                        </td>
+                                        <td>Rs. ${parseFloat(voucher.amount).toLocaleString('en-US', {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2
+                                        })}</td>
+                                    </tr>
+                                `;
+                            });
+                            
+                            vouchersHtml += `
+                                        </tbody>
+                                    </table>
+                                </div>
+                            `;
+                            
+                            $('#recentVouchers').html(vouchersHtml);
+                        } else {
+                            $('#recentVouchers').html(`
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i> No recent vouchers found for this recipient.
+                                </div>
+                            `);
+                        }
+                    },
+                    error: function() {
+                        $('#recentVouchers').html(`
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle"></i> Error loading voucher history.
+                            </div>
+                        `);
+                    }
+                });
+                
+                // Function to get badge HTML for donation type
+                function getBadgeForDonationType(type) {
+                    switch(type) {
+                        case 'Zakat':
+                            return '<span class="badge bg-primary">Zakat</span>';
+                        case 'Sadqa':
+                            return '<span class="badge bg-success">Sadqa</span>';
+                        case 'Marriage Salami':
+                            return '<span class="badge bg-danger">Marriage Salami</span>';
+                        case 'Eid Gift':
+                            return '<span class="badge bg-warning text-dark">Eid Gift</span>';
+                        default:
+                            return `<span class="badge bg-info">${type}</span>`;
+                    }
+                }
             } else {
                 // If no recipient is selected, show default message
                 $('#recipientDetails').html(`

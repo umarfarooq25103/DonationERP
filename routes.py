@@ -90,6 +90,41 @@ def get_frc_data(cnic):
         return jsonify(frc_data[cnic])
     return jsonify({"error": "CNIC not found in FRC database"}), 404
 
+@app.route('/api/recipient/<int:recipient_id>/vouchers', methods=['GET'])
+def get_recipient_vouchers(recipient_id):
+    try:
+        # Check if recipient exists
+        recipient = Recipient.query.get(recipient_id)
+        if not recipient:
+            return jsonify({"error": "Recipient not found"}), 404
+        
+        # Get recent vouchers for this recipient (limit to 5)
+        vouchers = Voucher.query.filter_by(recipient_id=recipient_id).order_by(desc(Voucher.donation_date)).limit(5).all()
+        
+        # Format the response
+        voucher_list = []
+        for voucher in vouchers:
+            voucher_list.append({
+                'id': voucher.id,
+                'donation_type': voucher.donation_type,
+                'amount': float(voucher.amount),
+                'donation_mode': voucher.donation_mode,
+                'donation_date': voucher.donation_date.strftime('%d-%m-%Y'),
+                'notes': voucher.notes
+            })
+        
+        return jsonify({
+            'recipient': {
+                'id': recipient.id,
+                'name': recipient.name,
+                'cnic': recipient.cnic
+            },
+            'vouchers': voucher_list
+        })
+    except Exception as e:
+        app.logger.error(f"Error fetching recipient vouchers: {str(e)}")
+        return jsonify({"error": "An error occurred while fetching recipient vouchers"}), 500
+
 # Voucher Creation
 @app.route('/vouchers/create', methods=['GET', 'POST'])
 def create_voucher():
