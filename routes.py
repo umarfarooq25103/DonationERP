@@ -480,6 +480,7 @@ def reports():
         all_donation_types=all_donation_types,
         all_donation_modes=all_donation_modes,
         report_type=report_type,
+        datetime=datetime,  # Pass datetime module to template
         current_filters={
             'start_date': start_date,
             'end_date': end_date,
@@ -629,9 +630,15 @@ def export_reports():
     # Create file name based on report type
     filename = f"donation_report_{report_type}"
     if start_date:
-        filename += f"_from_{start_date.strftime('%Y-%m-%d')}"
+        try:
+            filename += f"_from_{start_date.strftime('%Y-%m-%d')}"
+        except (AttributeError, TypeError):
+            pass
     if end_date:
-        filename += f"_to_{end_date.strftime('%Y-%m-%d')}"
+        try:
+            filename += f"_to_{end_date.strftime('%Y-%m-%d')}"
+        except (AttributeError, TypeError):
+            pass
     filename += ".csv"
     
     # Create response
