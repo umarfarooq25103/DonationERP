@@ -1,0 +1,57 @@
+Fix and improve the following issues in the Donation ERP Software (built with Flask and SQLite):
+
+### Issue 1: **Form Submission Bug**
+- **Problem**: The "Add Recipient" form does not save data to the database.
+- **Fix**: Ensure the form inputs (e.g., name, CNIC, address) are correctly bound to the database. Use Flask's `request.form` to capture input data and insert it into the SQLite database.
+- Ensure form validation is in place (required fields, proper CNIC format, etc.).
+- Display a success message once data is saved.
+
+### Issue 2: **Button Not Working**
+- **Problem**: The "Create Voucher" button does not trigger any action.
+- **Fix**: Check the button's `type` attribute (`type="submit"`), and ensure the form action (URL) is properly linked to the backend route.
+- Ensure that JavaScript (if used) for AJAX-based form submission is correctly handling button clicks and sending data to the Flask route.
+
+### Issue 3: **Data Not Saving Properly**
+- **Problem**: When creating a donation voucher, the data (e.g., recipient, amount, donation type) is not saving into the database.
+- **Fix**: Ensure that the database insertion code is correct. Use SQLAlchemy or raw SQL queries to save the data.
+- Verify that `POST` request data is received correctly from the form and saved to the `vouchers` table.
+
+### Issue 4: **FRC Data Not Showing Correctly**
+- **Problem**: The FRC data fetched from `frc_data.json` or API is not being displayed correctly after entering the CNIC.
+- **Fix**: Make sure that:
+  - The CNIC entered is matched correctly in `frc_data.json`.
+  - The `ajax` request fetches and displays FRC data dynamically without page reload.
+  - If you're using mock data (`frc_data.json`), check that the file path is correct and data structure matches.
+
+### Issue 5: **Error Handling & Form Validation**
+- **Problem**: Forms submit even if there’s invalid data or missing fields.
+- **Fix**: Add form validation for required fields (recipient name, amount, CNIC).
+- Use Flask's `flash()` messages to show user-friendly error messages when validation fails.
+- Example: Ensure CNIC is numeric and matches the expected length and format.
+
+### Issue 6: **Database Issues (SQLite)**
+- **Problem**: Data is not being fetched from the database or new records are not visible.
+- **Fix**: Ensure the database connection is open and that `commit()` is called after every `INSERT` operation.
+- Check if the SQLite database file (`database.sqlite`) exists and is not corrupted. If using SQLAlchemy, ensure all models are correctly defined.
+
+### Issue 7: **Buttons and Forms Not Styled Correctly**
+- **Problem**: The buttons (e.g., "Create Voucher", "Add Recipient") and forms are not styled or visible properly.
+- **Fix**: Apply correct Bootstrap classes for buttons (`btn btn-primary`, `btn btn-success`, etc.) and form inputs (`form-control`).
+- Ensure that `CSS` files are correctly linked and that there are no conflicting styles in the HTML templates.
+
+### General Instructions:
+1. **Check the Routes and Methods**:
+   - Ensure that the correct HTTP methods (`GET` or `POST`) are used in the Flask routes.
+   - Example: `@app.route('/add-recipient', methods=['GET', 'POST'])`
+   
+2. **Debug Logs**:
+   - Use `print()` statements or Flask's built-in logging to check if the data is being sent and received correctly.
+   
+3. **HTML Template Debugging**:
+   - Ensure the `action` attribute of your forms is set correctly to point to the respective Flask route.
+
+### Tasks:
+1. **Fix all bugs above** and provide an updated codebase with improvements.
+2. Test form submissions, voucher creation, FRC data fetching, and ensure data is being saved correctly.
+3. Add appropriate success/error messages for user feedback after every action (e.g., “Voucher created successfully!”).
+4. Ensure the frontend buttons and forms are functional and styled properly.
